@@ -1,0 +1,23 @@
+import type { z } from "zod";
+import type * as s from "../api/schemas";
+
+export type Role = z.infer<typeof s.roleSchema>;
+export type SubmissionStatus = z.infer<typeof s.submissionStatusSchema>;
+export type DocumentType = z.infer<typeof s.documentTypeSchema>;
+export type SubmissionDocument = z.infer<typeof s.documentSchema>;
+export type ProgramContext = z.infer<typeof s.programContextSchema>;
+export type Ro = z.infer<typeof s.roSchema>;
+export type Submission = z.infer<typeof s.submissionSchema>;
+export type Evidence = z.infer<typeof s.evidenceSchema>;
+export type TechnicalStatus = z.infer<typeof s.technicalStatusSchema>;
+export type Screening1Node = s.Screening1Node;
+export type Screening1Result = z.infer<typeof s.screening1ResultSchema>;
+export type Screening2Question = z.infer<typeof s.screening2QuestionSchema>;
+export type Screening2Result = z.infer<typeof s.screening2ResultSchema>;
+export type Decision = z.infer<typeof s.decisionSchema>;
+export type ChecklistItem = z.infer<typeof s.checklistItemSchema>;
+export type Checklist = z.infer<typeof s.checklistSchema>;
+export type PriorityCategory = z.infer<typeof s.priorityCategorySchema>;
+export type DocumentCategory = z.infer<typeof s.documentCategorySchema>;
+export type ReferenceDocument = z.infer<typeof s.referenceDocumentSchema>;
+export type User = z.infer<typeof s.userSchema>;

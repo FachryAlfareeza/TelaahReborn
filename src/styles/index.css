@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+@theme {
+  --color-sky-soft: #bfe3f7;
+  --color-sky-pale: #eaf6fd;
+  --color-brand: #3b9ad9;
+  --color-brand-deep: #1e5f8e;
+  --color-ink: #1f2a37;
+  --color-ink-soft: #5b6b7b;
+  --color-line: #d5e3ee;
+  --color-ok: #2e9e6b;
+  --color-warn: #e0a100;
+  --color-bad: #d64545;
+  --color-bad-text: #b83232; /* galat sebagai teks kecil, kontras di atas 4.5:1 */
+  --font-sans: "Inter Variable", "Inter", system-ui, sans-serif;
+  --radius-card: 12px;
+  --radius-control: 8px;
+  --text-3xl: 2rem; /* skala 12/14/16/20/24/32 */
+  --text-3xl--line-height: 2.5rem;
+  /* Grid 8px: pakai kelipatan genap Tailwind (2, 4, 6, 8 = 8, 16, 24, 32px). */
+}
+
+body {
+  background: var(--color-sky-pale);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+/* Fokus keyboard terlihat di semua kontrol (cadangan bila kelas lokal tidak ada). */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-brand-deep);
+  outline-offset: 2px;
+}
+
+/* Penanda komponen demo. Warna #FF0000 khusus untuk ini. */
+.demo-flag {
+  position: relative;
+  outline: 3px dashed #ff0000;
+  outline-offset: 2px;
+}
+.demo-flag::before {
+  content: "DEMO";
+  position: absolute;
+  top: -10px;
+  right: -2px;
+  background: #ff0000;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  z-index: 10;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
