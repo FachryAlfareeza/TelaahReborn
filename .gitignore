@@ -6,3 +6,4 @@ dist
 *.log
 .worktrees
 dokumen-pendukung
+.*/
