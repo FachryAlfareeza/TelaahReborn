@@ -12,7 +12,7 @@ import {
   useUpdateDocumentCategory,
   useUpdatePriorityCategory,
 } from "./hooks";
-import { errorText, Feedback, Field, inputClass, primaryButton, smallButton } from "./ui";
+import { errorText, Feedback, Field } from "./ui";
 
 const questionCodes = Array.from({ length: 12 }, (_, i) => `C${String(i + 1).padStart(2, "0")}`);
 
@@ -42,17 +42,17 @@ function PriorityCard({
         e.preventDefault();
         onSave(item.category, name, codes);
       }}
-      className="space-y-3 rounded-card border border-line bg-white p-4"
+      className="space-y-3 border-b border-line py-5"
     >
-      <h2 className="text-xl font-bold text-brand-deep">Kategori {item.category}</h2>
+      <h2 className="section-title">Kategori {item.category}</h2>
       <Field id={nameId} label={`Nama kategori ${item.category}`}>
-        <input id={nameId} value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
+        <input id={nameId} value={name} onChange={(e) => setName(e.target.value)} className="field" />
       </Field>
       {item.category === 0 ? (
         <p className="text-sm text-ink-soft">Kategori 0 tidak punya pertanyaan. Dipakai bila bukti kurang.</p>
       ) : (
         <fieldset>
-          <legend className="mb-1 text-sm font-medium text-brand-deep">Pertanyaan pada kategori {item.category}</legend>
+          <legend className="field-label">Pertanyaan pada kategori {item.category}</legend>
           <div className="flex flex-wrap gap-4">
             {questionCodes.map((c) => (
               <label key={c} className="inline-flex items-center gap-2 text-sm">
@@ -68,7 +68,7 @@ function PriorityCard({
           </div>
         </fieldset>
       )}
-      <button type="submit" disabled={busy} className={primaryButton}>
+      <button type="submit" disabled={busy} className="btn btn-primary">
         Simpan kategori {item.category}
       </button>
     </form>
@@ -148,7 +148,7 @@ export function CategoryPage() {
           <button
             type="button"
             aria-label={`Ubah kategori ${c.code}`}
-            className={smallButton}
+            className="btn btn-secondary btn-sm"
             onClick={() => {
               setEditing(c);
               setEditName(c.name);
@@ -156,7 +156,7 @@ export function CategoryPage() {
           >
             Ubah
           </button>
-          <button type="button" aria-label={`Hapus kategori ${c.code}`} className={smallButton} onClick={() => setToDelete(c)}>
+          <button type="button" aria-label={`Hapus kategori ${c.code}`} className="btn btn-secondary btn-sm" onClick={() => setToDelete(c)}>
             Hapus
           </button>
         </div>
@@ -165,8 +165,8 @@ export function CategoryPage() {
   ];
 
   return (
-    <section className="space-y-6">
-      <h1 className="text-2xl font-bold text-brand-deep">Pengelolaan Kategori</h1>
+    <div className="space-y-6">
+      <h1 className="page-title">Pengelolaan Kategori</h1>
 
       <div role="tablist" aria-label="Jenis kategori" className="flex gap-2 border-b border-line">
         {tabs.map((t, i) => (
@@ -180,7 +180,7 @@ export function CategoryPage() {
             tabIndex={tab === t.key ? 0 : -1}
             onClick={() => setTab(t.key)}
             onKeyDown={(e) => onTabKey(e, i)}
-            className={`rounded-t-control px-4 py-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+            className={`rounded-t-control px-4 py-2 text-sm font-medium ${
               tab === t.key ? "border-b-2 border-brand-deep text-brand-deep" : "text-ink-soft"
             }`}
           >
@@ -193,10 +193,7 @@ export function CategoryPage() {
 
       {tab === "priority" && (
         <div role="tabpanel" id="panel-priority" aria-labelledby="tab-priority" className="space-y-4">
-          <p className="text-ink-soft">
-            Hasil Screening 2 adalah Kategori 1 sampai 4, atau Kategori 0 bila perlu pemeriksaan manual. Satu
-            pertanyaan hanya bisa ada di satu kategori. Bila dipindah, pertanyaan itu keluar dari kategori lamanya.
-          </p>
+          <p className="text-sm text-ink-soft">Satu pertanyaan hanya bisa ada di satu kategori.</p>
           {priority.isPending && <LoadingState label="Memuat kategori prioritas..." />}
           {priority.error && <ErrorState message={priority.error.message} onRetry={() => void priority.refetch()} />}
           {priority.data?.map((p) => (
@@ -217,33 +214,32 @@ export function CategoryPage() {
 
       {tab === "document" && (
         <div role="tabpanel" id="panel-document" aria-labelledby="tab-document" className="space-y-4">
-          <p className="text-ink-soft">Jenis dokumen, misalnya TOR, RAB, dan jenis acuan seperti RPJMN, Renstra, PMK/SBM.</p>
-          <form aria-label="Tambah kategori dokumen" onSubmit={(e) => void onAddDoc(e)} className="space-y-4 rounded-card border border-line bg-white p-4">
-            <h2 className="text-xl font-bold text-brand-deep">Tambah kategori dokumen</h2>
+          <form aria-label="Tambah kategori dokumen" onSubmit={(e) => void onAddDoc(e)} className="space-y-4 border-t border-line pt-6">
+            <h2 className="section-title">Tambah kategori dokumen</h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field id={ids.code} label="Kode kategori dokumen">
-                <input id={ids.code} value={code} onChange={(e) => setCode(e.target.value)} className={inputClass} />
+                <input id={ids.code} value={code} onChange={(e) => setCode(e.target.value)} className="field" />
               </Field>
               <Field id={ids.name} label="Nama kategori dokumen">
-                <input id={ids.name} value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
+                <input id={ids.name} value={name} onChange={(e) => setName(e.target.value)} className="field" />
               </Field>
             </div>
-            <button type="submit" disabled={createDoc.isPending} className={primaryButton}>
+            <button type="submit" disabled={createDoc.isPending} className="btn btn-primary">
               Tambah kategori
             </button>
           </form>
 
           {editing && (
-            <form aria-label="Ubah kategori dokumen" onSubmit={(e) => void onSaveEdit(e)} className="space-y-4 rounded-card border border-line bg-white p-4">
-              <h2 className="text-xl font-bold text-brand-deep">Ubah kategori {editing.code}</h2>
+            <form aria-label="Ubah kategori dokumen" onSubmit={(e) => void onSaveEdit(e)} className="space-y-4 border-t border-line pt-6">
+              <h2 className="section-title">Ubah kategori {editing.code}</h2>
               <Field id={ids.edit} label="Nama baru">
-                <input id={ids.edit} value={editName} onChange={(e) => setEditName(e.target.value)} className={inputClass} />
+                <input id={ids.edit} value={editName} onChange={(e) => setEditName(e.target.value)} className="field" />
               </Field>
               <div className="flex gap-2">
-                <button type="submit" disabled={updateDoc.isPending} className={primaryButton}>
+                <button type="submit" disabled={updateDoc.isPending} className="btn btn-primary">
                   Simpan perubahan
                 </button>
-                <button type="button" className={smallButton} onClick={() => setEditing(null)}>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setEditing(null)}>
                   Batal ubah
                 </button>
               </div>
@@ -263,6 +259,6 @@ export function CategoryPage() {
           Kategori "{toDelete?.name}" akan dihapus. Kategori yang masih dipakai dokumen acuan tidak bisa dihapus.
         </p>
       </ConfirmDialog>
-    </section>
+    </div>
   );
 }

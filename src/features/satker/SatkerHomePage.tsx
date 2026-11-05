@@ -1,8 +1,11 @@
 import { Link } from "react-router-dom";
+import { EmptyState } from "../../components/EmptyState";
 import { ErrorState } from "../../components/ErrorState";
 import { LoadingState } from "../../components/LoadingState";
+import { Section } from "../../components/Section";
 import { StatusBadge } from "../../components/StatusBadge";
-import { getStatusLabel } from "../../lib/status";
+import { StatusSummary } from "../../components/StatusSummary";
+import { formatDate } from "../../lib/date";
 import type { SubmissionStatus } from "../../types";
 import { useSubmissions } from "./hooks";
 
@@ -11,43 +14,55 @@ const summaryStatuses: SubmissionStatus[] = ["PROCESSING", "AWAITING_REVIEW", "A
 
 export function SatkerHomePage() {
   const { data, isPending, error, refetch } = useSubmissions();
+  const recent = [...(data ?? [])].sort((a, b) => b.submittedAt.localeCompare(a.submittedAt)).slice(0, 5);
 
   return (
-    <section className="space-y-6">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-brand-deep">Beranda Satker</h1>
-        <Link
-          to="/satker/ajukan"
-          className="rounded-control bg-brand-deep px-4 py-2 text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-        >
+        <h1 className="page-title">Beranda Satker</h1>
+        <Link to="/satker/ajukan" className="btn btn-primary">
           Ajukan Baru
         </Link>
       </div>
 
-      {isPending && <LoadingState label="Memuat ringkasan pengajuan..." />}
+      {isPending && <LoadingState />}
       {error && <ErrorState message={error.message} onRetry={() => void refetch()} />}
       {data && (
         <>
-          <h2 className="text-lg font-semibold text-brand-deep">Ringkasan pengajuan</h2>
-          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {summaryStatuses.map((status) => {
-              const label = getStatusLabel(status, "SATKER");
-              // Pemrosesan bermasalah tampil sebagai "Terupload" bagi Satker, jadi ikut dihitung.
-              const count = data.filter((s) => getStatusLabel(s.status, "SATKER") === label).length;
-              return (
-                <li key={status} className="rounded-card border border-line bg-white p-4 shadow-sm">
-                  <StatusBadge status={status} role="SATKER" />
-                  <p className="mt-2 text-3xl font-bold tabular-nums text-ink">{count}</p>
-                  <p className="text-sm text-ink-soft">pengajuan</p>
-                </li>
-              );
-            })}
-          </ul>
-          <p className="text-sm text-ink-soft">
-            Setelah Anda menekan Kirim, pemeriksaan berjalan sendiri. Anda tidak perlu menekan tombol lain.
-          </p>
+          <StatusSummary submissions={data} statuses={summaryStatuses} role="SATKER" listPath="/satker/pengajuan" />
+          <Section
+            title="Pengajuan terbaru"
+            aside={
+              data.length > recent.length && (
+                <Link to="/satker/pengajuan" className="link ml-auto text-sm">
+                  Lihat semua
+                </Link>
+              )
+            }
+          >
+            {recent.length === 0 ? (
+              <EmptyState title="Belum ada pengajuan." />
+            ) : (
+              <ul className="divide-y divide-line">
+                {recent.map((s) => (
+                  <li key={s.id}>
+                    <Link
+                      to={`/satker/pengajuan/${s.id}`}
+                      className="flex flex-wrap items-center gap-x-6 gap-y-1 py-3 hover:bg-sky-pale"
+                    >
+                      <span className="w-24 font-medium">RO {s.roCode}</span>
+                      <span className="text-sm text-ink-soft">{formatDate(s.submittedAt)}</span>
+                      <span className="ml-auto">
+                        <StatusBadge status={s.status} role="SATKER" />
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Section>
         </>
       )}
-    </section>
+    </div>
   );
 }

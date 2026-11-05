@@ -1,6 +1,7 @@
 import { lazy, Suspense, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { AiCandidateTag } from "../../components/AiCandidateTag";
+import { BackLink } from "../../components/BackLink";
 import { CategoryResultCard } from "../../components/CategoryResultCard";
 import { ChecklistTree } from "../../components/ChecklistTree";
 import { DecisionPanel } from "../../components/DecisionPanel";
@@ -8,6 +9,7 @@ import { DocumentPair } from "../../components/DocumentPair";
 import { ErrorState } from "../../components/ErrorState";
 import { LoadingState } from "../../components/LoadingState";
 import { ProgramContextPanel } from "../../components/ProgramContextPanel";
+import { Section } from "../../components/Section";
 import { StatusBadge } from "../../components/StatusBadge";
 import { formatDate } from "../../lib/date";
 import { TECHNICAL_LABEL } from "../../lib/verdict";
@@ -56,71 +58,50 @@ export function RocanReviewPage() {
   }
 
   return (
-    <section className="space-y-6">
-      <Link
-        to="/rocan/pengajuan"
-        className="text-sm text-brand-deep underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-      >
-        Kembali ke daftar pengajuan
-      </Link>
-      <h1 className="text-2xl font-bold text-brand-deep">Detail Reviu</h1>
+    <div className="space-y-6">
+      <BackLink to="/rocan/pengajuan" label="Daftar pengajuan" />
 
-      {isPending && <LoadingState label="Memuat pengajuan..." />}
+      {isPending && <LoadingState />}
       {error && <ErrorState message={error.message} onRetry={() => void refetch()} />}
+      {!data && <h1 className="sr-only">Detail Reviu</h1>}
       {data && (
         <>
-          <div className="space-y-2 rounded-card border border-line bg-white p-4">
-            <p className="flex flex-wrap items-center gap-2">
-              <span className="font-medium">Status:</span>
+          <header>
+            <h1 className="page-title">RO {data.roCode}</h1>
+            <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-soft">
+              <span className="text-ink">{data.satkerName}</span>
+              <span>{formatDate(data.submittedAt)}</span>
               <StatusBadge status={data.status} role={role} />
             </p>
-            <dl className="grid gap-2 text-sm sm:grid-cols-3">
-              <div>
-                <dt className="text-ink-soft">Kode RO</dt>
-                <dd className="font-medium">{data.roCode}</dd>
-              </div>
-              <div>
-                <dt className="text-ink-soft">Satker</dt>
-                <dd className="font-medium">{data.satkerName}</dd>
-              </div>
-              <div>
-                <dt className="text-ink-soft">Tanggal kirim</dt>
-                <dd className="font-medium">{formatDate(data.submittedAt)}</dd>
-              </div>
-            </dl>
-          </div>
+          </header>
 
-          <div>
-            <h2 className="mb-2 text-lg font-semibold text-brand-deep">Dokumen</h2>
+          <Section title="Dokumen">
             <DocumentPair documents={data.documents} />
-          </div>
+          </Section>
 
-          <div>
-            <h2 className="mb-2 text-lg font-semibold text-brand-deep">Konteks program</h2>
+          <Section title="Konteks program">
             <ProgramContextPanel context={data.context} />
-          </div>
+          </Section>
 
-          {data.status === "PROCESSING" && (
-            <LoadingState label="Dokumen masih diproses AI. Halaman ini diperbarui sendiri." />
-          )}
+          {data.status === "PROCESSING" && <LoadingState label="Masih diproses AI." />}
 
           {data.status === "PROCESSING_FAILED" && (
-            <div role="alert" className="space-y-2 rounded-card border border-bad bg-white p-4">
-              <h2 className="text-lg font-semibold text-brand-deep">{TECHNICAL_LABEL}</h2>
-              <p className="text-sm">
-                Pemeriksaan otomatis belum selesai karena ada masalah teknis. Ini bukan kesimpulan reviu.
+            <div role="alert" className="space-y-2 border-l-2 border-bad py-1 pl-4">
+              <h2 className="section-title">{TECHNICAL_LABEL}</h2>
+              <p className="text-sm text-ink-soft">
+                Pemeriksaan otomatis terhenti karena masalah teknis. Ini bukan kesimpulan reviu.
               </p>
               {canResubmitProcessing(data.status, role) && (
                 <button
                   type="button"
                   disabled={resubmit.isPending}
                   onClick={() => resubmit.mutate(data.id)}
-                  className="rounded-control bg-brand-deep px-4 py-2 text-sm font-medium text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-60"
+                  className="btn btn-primary"
                 >
                   {resubmit.isPending ? "Mengirim ulang..." : "Kirim ulang pemrosesan"}
                 </button>
               )}
-              {resubmit.error && <p className="text-sm">{resubmit.error.message}</p>}
+              {resubmit.error && <p className="error-text">{resubmit.error.message}</p>}
             </div>
           )}
 
@@ -131,29 +112,20 @@ export function RocanReviewPage() {
                   {previewNote}
                 </p>
               )}
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-lg font-semibold text-brand-deep">Screening 1: kualitas isi</h2>
-                  <AiCandidateTag />
-                </div>
-                {s1.isPending && <LoadingState label="Memuat hasil Screening 1..." />}
+              <Section title="Screening 1: kualitas isi" aside={<AiCandidateTag />}>
+                {s1.isPending && <LoadingState />}
                 {s1.error && <ErrorState message={s1.error.message} onRetry={() => void s1.refetch()} />}
                 {s1.data && <ChecklistTree items={s1.data.items} onOpenEvidence={openEvidence} />}
-              </div>
+              </Section>
 
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-lg font-semibold text-brand-deep">Screening 2: kategori prioritas</h2>
-                  <AiCandidateTag />
-                </div>
-                {s2.isPending && <LoadingState label="Memuat hasil Screening 2..." />}
+              <Section title="Screening 2: kategori prioritas" aside={<AiCandidateTag />}>
+                {s2.isPending && <LoadingState />}
                 {s2.error && <ErrorState message={s2.error.message} onRetry={() => void s2.refetch()} />}
                 {s2.data && <CategoryResultCard result={s2.data} onOpenEvidence={openEvidence} />}
-              </div>
+              </Section>
 
-              <div className="space-y-2">
-                <h2 className="text-lg font-semibold text-brand-deep">Keputusan ROCAN</h2>
-                {decision.isPending && decided && <LoadingState label="Memuat keputusan..." />}
+              <Section title="Keputusan ROCAN">
+                {decision.isPending && decided && <LoadingState />}
                 {decision.error && (
                   <ErrorState message={decision.error.message} onRetry={() => void decision.refetch()} />
                 )}
@@ -167,11 +139,13 @@ export function RocanReviewPage() {
                     onSave={(d, note) => save.mutate({ submissionId: data.id, decision: d, note })}
                   />
                 )}
-              </div>
+              </Section>
             </>
           )}
 
-          <TechnicalSection role={role} submissionId={data.id} screening1={s1.data} screening2={s2.data} />
+          <div className="border-t border-line pt-6">
+            <TechnicalSection role={role} submissionId={data.id} screening1={s1.data} screening2={s2.data} />
+          </div>
 
           {preview && (
             <Suspense fallback={<LoadingState label="Memuat pratinjau..." />}>
@@ -186,6 +160,6 @@ export function RocanReviewPage() {
           )}
         </>
       )}
-    </section>
+    </div>
   );
 }

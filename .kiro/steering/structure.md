@@ -25,5 +25,6 @@ TelaahReborn/
 ## Aturan
 - Satu fungsi pemetaan status per peran di `lib/`, dipakai semua komponen.
 - Token desain (warna, spasi, radius) terpusat, jangan nilai warna acak di komponen.
+- Gaya tombol, input, judul, dan tautan memakai kelas bersama di `styles/index.css` (`btn`, `btn-primary`, `btn-secondary`, `field`, `field-label`, `page-title`, `section-title`, `link`). Jangan menyalin deret kelas Tailwind. Fokus keyboard sudah diatur global.
 - Komponen demo hanya lewat `DemoOnly` (lihat demo-flagging.md).
 - Fitur dikelompokkan per peran di `features/`, komponen lintas peran di `components/`.

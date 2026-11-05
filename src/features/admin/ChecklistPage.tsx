@@ -12,7 +12,7 @@ import {
   useSplitChecklistItem,
   useUpdateChecklistItem,
 } from "./hooks";
-import { ActiveLabel, errorText, Feedback, Field, inputClass, primaryButton, smallButton } from "./ui";
+import { ActiveLabel, errorText, Feedback, Field } from "./ui";
 
 const docTypes: { value: DocumentType; label: string }[] = [
   { value: "TOR", label: "TOR" },
@@ -155,13 +155,13 @@ export function ChecklistPage() {
       header: "Tindakan",
       render: (i) => (
         <div className="flex flex-wrap gap-2">
-          <button type="button" aria-label={`Ubah butir ${i.code}`} className={smallButton} onClick={() => startEdit(i)}>
+          <button type="button" aria-label={`Ubah butir ${i.code}`} className="btn btn-secondary btn-sm" onClick={() => startEdit(i)}>
             Ubah
           </button>
           <button
             type="button"
             aria-label={`Pecah butir ${i.code}`}
-            className={smallButton}
+            className="btn btn-secondary btn-sm"
             onClick={() => {
               setEditingCode(null);
               setDraft(blank);
@@ -173,7 +173,7 @@ export function ChecklistPage() {
           <button
             type="button"
             aria-label={`${i.active ? "Nonaktifkan" : "Aktifkan"} butir ${i.code}`}
-            className={smallButton}
+            className="btn btn-secondary btn-sm"
             disabled={update.isPending}
             onClick={() =>
               void run(
@@ -184,7 +184,7 @@ export function ChecklistPage() {
           >
             {i.active ? "Nonaktifkan" : "Aktifkan"}
           </button>
-          <button type="button" aria-label={`Hapus butir ${i.code}`} className={smallButton} onClick={() => setToDelete(i)}>
+          <button type="button" aria-label={`Hapus butir ${i.code}`} className="btn btn-secondary btn-sm" onClick={() => setToDelete(i)}>
             Hapus
           </button>
         </div>
@@ -193,12 +193,8 @@ export function ChecklistPage() {
   ];
 
   return (
-    <section className="space-y-6">
-      <h1 className="text-2xl font-bold text-brand-deep">Pengelolaan Checklist</h1>
-      <p className="text-ink-soft">
-        Checklist berbentuk induk dengan banyak anak. Kolom "Dicari di bagian TOR" menyimpan pemetaan 5W+1H sebagai
-        data, jadi bisa diubah kapan saja tanpa mengubah program.
-      </p>
+    <div className="space-y-6">
+      <h1 className="page-title">Pengelolaan Checklist</h1>
       {checklist.data && (
         <p className="text-sm text-ink-soft">Versi checklist: {checklist.data.version}</p>
       )}
@@ -206,20 +202,20 @@ export function ChecklistPage() {
       <form
         aria-label={editingCode ? "Ubah butir checklist" : "Tambah butir checklist"}
         onSubmit={(e) => void onSubmit(e)}
-        className="space-y-4 rounded-card border border-line bg-white p-4"
+        className="space-y-4 border-t border-line pt-6"
       >
-        <h2 className="text-xl font-bold text-brand-deep">
+        <h2 className="section-title">
           {editingCode ? `Ubah butir ${editingCode}` : "Tambah butir checklist"}
         </h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field id={ids.code} label="Kode butir">
-            <input id={ids.code} value={draft.code} disabled={editingCode !== null} onChange={(e) => setDraft({ ...draft, code: e.target.value })} className={`${inputClass} disabled:bg-sky-pale`} />
+            <input id={ids.code} value={draft.code} disabled={editingCode !== null} onChange={(e) => setDraft({ ...draft, code: e.target.value })} className={`field disabled:bg-sky-pale`} />
           </Field>
           <Field id={ids.title} label="Judul butir">
-            <input id={ids.title} value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} className={inputClass} />
+            <input id={ids.title} value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} className="field" />
           </Field>
           <Field id={ids.parent} label="Induk">
-            <select id={ids.parent} value={draft.parentCode} onChange={(e) => setDraft({ ...draft, parentCode: e.target.value })} className={inputClass}>
+            <select id={ids.parent} value={draft.parentCode} onChange={(e) => setDraft({ ...draft, parentCode: e.target.value })} className="field">
               <option value="">Tanpa induk</option>
               {items
                 .filter((i) => i.code !== editingCode)
@@ -231,13 +227,13 @@ export function ChecklistPage() {
             </select>
           </Field>
           <Field id={ids.order} label="Urutan">
-            <input id={ids.order} type="number" min={0} value={draft.order} onChange={(e) => setDraft({ ...draft, order: e.target.value })} className={inputClass} />
+            <input id={ids.order} type="number" min={0} value={draft.order} onChange={(e) => setDraft({ ...draft, order: e.target.value })} className="field" />
           </Field>
           <Field id={ids.source} label="Dicari di bagian TOR (pemetaan 5W+1H)">
-            <input id={ids.source} value={draft.source} onChange={(e) => setDraft({ ...draft, source: e.target.value })} className={inputClass} />
+            <input id={ids.source} value={draft.source} onChange={(e) => setDraft({ ...draft, source: e.target.value })} className="field" />
           </Field>
           <fieldset>
-            <legend className="mb-1 text-sm font-medium text-brand-deep">Dokumen wajib dikutip</legend>
+            <legend className="field-label">Dokumen wajib dikutip</legend>
             <div className="flex flex-wrap gap-4">
               {docTypes.map((d) => (
                 <label key={d.value} className="inline-flex items-center gap-2 text-sm">
@@ -249,13 +245,13 @@ export function ChecklistPage() {
           </fieldset>
         </div>
         <div className="flex gap-2">
-          <button type="submit" disabled={create.isPending || update.isPending} className={primaryButton}>
+          <button type="submit" disabled={create.isPending || update.isPending} className="btn btn-primary">
             {editingCode ? "Simpan perubahan" : "Tambah butir"}
           </button>
           {editingCode && (
             <button
               type="button"
-              className={smallButton}
+              className="btn btn-secondary btn-sm"
               onClick={() => {
                 setEditingCode(null);
                 setDraft(blank);
@@ -268,19 +264,19 @@ export function ChecklistPage() {
       </form>
 
       {splitCode && (
-        <form aria-label="Pecah butir" onSubmit={(e) => void onSplit(e)} className="space-y-4 rounded-card border border-line bg-white p-4">
-          <h2 className="text-xl font-bold text-brand-deep">Pecah butir {splitCode}</h2>
+        <form aria-label="Pecah butir" onSubmit={(e) => void onSplit(e)} className="space-y-4 border-t border-line pt-6">
+          <h2 className="section-title">Pecah butir {splitCode}</h2>
           <p className="text-sm text-ink-soft">
             Butir "{titleOf(splitCode)}" akan punya anak baru. Tulis satu judul per baris, minimal dua baris.
           </p>
           <Field id={ids.split} label="Judul butir baru (satu per baris)">
-            <textarea id={ids.split} rows={4} value={splitText} onChange={(e) => setSplitText(e.target.value)} className={inputClass} />
+            <textarea id={ids.split} rows={4} value={splitText} onChange={(e) => setSplitText(e.target.value)} className="field" />
           </Field>
           <div className="flex gap-2">
-            <button type="submit" disabled={split.isPending} className={primaryButton}>
+            <button type="submit" disabled={split.isPending} className="btn btn-primary">
               Pecah butir
             </button>
-            <button type="button" className={smallButton} onClick={() => setSplitCode(null)}>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setSplitCode(null)}>
               Batal pecah
             </button>
           </div>
@@ -301,6 +297,6 @@ export function ChecklistPage() {
           berhenti memakainya, pilih Nonaktifkan.
         </p>
       </ConfirmDialog>
-    </section>
+    </div>
   );
 }

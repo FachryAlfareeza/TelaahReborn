@@ -1,5 +1,5 @@
 import { useId, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { DataTable, type Column } from "../../components/DataTable";
 import { ErrorState } from "../../components/ErrorState";
 import { LoadingState } from "../../components/LoadingState";
@@ -13,7 +13,8 @@ const filterOptions = ["Terupload", "Diperiksa", "Diterima", "Ditolak"];
 
 export function SubmissionsPage() {
   const { data, isPending, error, refetch } = useSubmissions();
-  const [filter, setFilter] = useState("");
+  const [params] = useSearchParams();
+  const [filter, setFilter] = useState(params.get("status") ?? "");
   const filterId = useId();
 
   const rows = useMemo(
@@ -42,7 +43,7 @@ export function SubmissionsPage() {
         <Link
           to={`/satker/pengajuan/${s.id}`}
           aria-label={`Lihat detail pengajuan RO ${s.roCode}, ${formatDate(s.submittedAt)}`}
-          className="text-brand-deep underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+          className="link"
         >
           Lihat detail
         </Link>
@@ -51,17 +52,17 @@ export function SubmissionsPage() {
   ];
 
   return (
-    <section className="space-y-4">
-      <h1 className="text-2xl font-bold text-brand-deep">Pengajuan Saya</h1>
+    <div className="space-y-4">
+      <h1 className="page-title">Pengajuan Saya</h1>
       <div>
-        <label htmlFor={filterId} className="mb-1 block text-sm font-medium text-brand-deep">
+        <label htmlFor={filterId} className="field-label">
           Tampilkan status
         </label>
         <select
           id={filterId}
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          className="rounded-control border border-line bg-white px-3 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+          className="field w-auto"
         >
           <option value="">Semua status</option>
           {filterOptions.map((o) => (
@@ -83,6 +84,6 @@ export function SubmissionsPage() {
           emptyTitle={filter ? `Belum ada pengajuan berstatus ${filter}` : "Belum ada pengajuan"}
         />
       )}
-    </section>
+    </div>
   );
 }

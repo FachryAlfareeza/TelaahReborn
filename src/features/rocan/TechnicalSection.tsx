@@ -41,12 +41,9 @@ export function TechnicalSection({ role, submissionId, screening1, screening2 }:
     URL.revokeObjectURL(url);
   }
 
-  const btn =
-    "rounded-control border border-line bg-white px-3 py-2 text-sm text-brand-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand";
-
   return (
     <div>
-      <button type="button" className={btn} aria-expanded={open} aria-controls={panelId} onClick={() => setOpen((v) => !v)}>
+      <button type="button" className="btn btn-secondary" aria-expanded={open} aria-controls={panelId} onClick={() => setOpen((v) => !v)}>
         {open ? "Sembunyikan bagian teknis" : "Tampilkan bagian teknis"}
       </button>
       {open && (
@@ -93,7 +90,7 @@ export function TechnicalSection({ role, submissionId, screening1, screening2 }:
               {raw}
             </pre>
           </div>
-          <button type="button" className={btn} onClick={download}>
+          <button type="button" className="btn btn-secondary" onClick={download}>
             Unduh JSON
           </button>
         </div>

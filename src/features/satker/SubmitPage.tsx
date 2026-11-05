@@ -11,8 +11,8 @@ function LocalPreview({ file, label }: { file: File; label: string }) {
   const url = useMemo(() => URL.createObjectURL(file), [file]);
   useEffect(() => () => URL.revokeObjectURL(url), [url]);
   return (
-    <details className="rounded-card border border-line bg-white p-3">
-      <summary className="cursor-pointer text-sm font-medium text-brand-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
+    <details className="border-b border-line py-2">
+      <summary className="cursor-pointer text-sm">
         Pratinjau {label}: {file.name} ({formatFileSize(file.size)})
       </summary>
       <object data={url} type="application/pdf" aria-label={`Pratinjau ${label}`} className="mt-2 h-96 w-full">
@@ -27,7 +27,6 @@ export function SubmitPage() {
   const [params] = useSearchParams();
   const previousSubmissionId = params.get("ulang") || undefined;
   const roId = useId();
-  const roError = useId();
   const ros = useRos();
   const create = useCreateSubmission();
   const [roCode, setRoCode] = useState("");
@@ -52,16 +51,11 @@ export function SubmitPage() {
   }
 
   return (
-    <section className="max-w-2xl space-y-6">
-      <h1 className="text-2xl font-bold text-brand-deep">Ajukan Baru</h1>
-      <p className="text-ink-soft">
-        Pilih RO, unggah TOR dan RAB, lalu tekan Kirim. Pemeriksaan berjalan sendiri setelah itu.
-      </p>
+    <div className="max-w-2xl space-y-6">
+      <h1 className="page-title">Ajukan Baru</h1>
 
       {previousSubmissionId && (
-        <p className="rounded-card border border-line bg-white p-3 text-sm">
-          Ini pengajuan ulang dari pengajuan yang ditolak. Keduanya akan tertaut.
-        </p>
+        <p className="text-sm text-ink-soft">Pengajuan ulang. Akan ditautkan ke pengajuan yang ditolak.</p>
       )}
       {ros.isPending && <LoadingState label="Memuat daftar RO..." />}
       {ros.error && <ErrorState message={ros.error.message} onRetry={() => void ros.refetch()} />}
@@ -69,8 +63,8 @@ export function SubmitPage() {
       {ros.data && (
         <form onSubmit={onSubmit} noValidate className="space-y-6">
           {problems.length > 0 && (
-            <div role="alert" className="rounded-card border border-bad bg-white p-4 text-sm">
-              <p className="font-semibold">Mohon lengkapi dulu:</p>
+            <div role="alert" className="border-l-2 border-bad pl-4 text-sm">
+              <p className="font-semibold">Belum lengkap:</p>
               <ul className="list-disc pl-5">
                 {problems.map((p) => (
                   <li key={p}>{p}</li>
@@ -80,16 +74,15 @@ export function SubmitPage() {
           )}
 
           <div>
-            <label htmlFor={roId} className="mb-1 block text-sm font-medium text-brand-deep">
+            <label htmlFor={roId} className="field-label">
               Rincian Output (RO)
             </label>
             <select
               id={roId}
               value={roCode}
               onChange={(e) => setRoCode(e.target.value)}
-              aria-describedby={roError}
-              disabled={create.isPending}
-              className="w-full rounded-control border border-line bg-white px-3 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                            disabled={create.isPending}
+              className="field"
             >
               <option value="">Pilih RO</option>
               {activeRos.map((r) => (
@@ -98,9 +91,6 @@ export function SubmitPage() {
                 </option>
               ))}
             </select>
-            <p id={roError} className="mt-1 text-sm text-ink-soft">
-              Hanya RO yang aktif yang tampil.
-            </p>
           </div>
 
           <UploadDropzone label="Berkas TOR (PDF)" file={tor} onChange={setTor} disabled={create.isPending} />
@@ -120,12 +110,12 @@ export function SubmitPage() {
           <button
             type="submit"
             disabled={create.isPending}
-            className="rounded-control bg-brand-deep px-6 py-2 font-medium text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-60"
+            className="btn btn-primary"
           >
             {create.isPending ? "Mengirim..." : "Kirim"}
           </button>
         </form>
       )}
-    </section>
+    </div>
   );
 }

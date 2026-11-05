@@ -59,11 +59,11 @@ export function DataTable<T>({
   }
 
   return (
-    <div className="rounded-card border border-line bg-white">
+    <div>
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
-          <caption className="p-4 text-left text-base font-semibold text-brand-deep">{caption}</caption>
-          <thead className="bg-sky-pale text-brand-deep">
+          <caption className="sr-only">{caption}</caption>
+          <thead className="border-b border-line-strong text-ink-soft">
             <tr>
               {columns.map((c) => {
                 const active = sort?.key === c.key;
@@ -74,13 +74,13 @@ export function DataTable<T>({
                     key={c.key}
                     scope="col"
                     aria-sort={c.sortValue ? (ariaSort ?? "none") : undefined}
-                    className={`px-4 py-2 font-semibold ${c.numeric ? "text-right" : ""}`}
+                    className={`px-3 py-2 font-medium first:pl-0 ${c.numeric ? "text-right" : ""}`}
                   >
                     {c.sortValue ? (
                       <button
                         type="button"
                         onClick={() => toggleSort(c.key)}
-                        className="inline-flex items-center gap-1 rounded-control focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                        className="inline-flex items-center gap-1 rounded-control"
                       >
                         {c.header}
                         <SortIcon aria-hidden="true" size={14} />
@@ -95,14 +95,14 @@ export function DataTable<T>({
           </thead>
           <tbody>
             {visible.map((row) => (
-              <tr key={getRowKey(row)} className="border-t border-line">
+              <tr key={getRowKey(row)} className="border-b border-line">
                 {columns.map((c, i) =>
                   i === 0 ? (
-                    <th key={c.key} scope="row" className="px-4 py-2 font-medium">
+                    <th key={c.key} scope="row" className="py-3 pr-3 font-medium">
                       {c.render(row)}
                     </th>
                   ) : (
-                    <td key={c.key} className={`px-4 py-2 tabular-nums ${c.numeric ? "text-right" : ""}`}>
+                    <td key={c.key} className={`px-3 py-3 tabular-nums ${c.numeric ? "text-right" : ""}`}>
                       {c.render(row)}
                     </td>
                   ),
@@ -113,7 +113,7 @@ export function DataTable<T>({
         </table>
       </div>
       {pageCount > 1 && (
-        <nav aria-label="Halaman tabel" className="flex items-center justify-between gap-2 border-t border-line p-4 text-sm">
+        <nav aria-label="Halaman tabel" className="flex items-center justify-between gap-2 pt-3 text-sm text-ink-soft">
           <span id={liveId} aria-live="polite">
             Halaman {current} dari {pageCount}
           </span>
@@ -122,7 +122,7 @@ export function DataTable<T>({
               type="button"
               disabled={current <= 1}
               onClick={() => setPage(current - 1)}
-              className="rounded-control border border-line px-4 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-50"
+              className="btn btn-secondary"
             >
               Sebelumnya
             </button>
@@ -130,7 +130,7 @@ export function DataTable<T>({
               type="button"
               disabled={current >= pageCount}
               onClick={() => setPage(current + 1)}
-              className="rounded-control border border-line px-4 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-50"
+              className="btn btn-secondary"
             >
               Berikutnya
             </button>

@@ -21,11 +21,11 @@ export function ProgramContextPanel({ context }: { context: Context }) {
     ["RO", codeAndName(context.roCode, context.roName)],
   ];
   return (
-    <dl className="grid gap-3 rounded-card border border-line bg-white p-4 text-sm sm:grid-cols-2">
+    <dl className="grid gap-x-8 gap-y-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
       {rows.map(([label, value]) => (
         <div key={label}>
-          <dt className="text-ink-soft">{label}</dt>
-          <dd className="font-medium">{value}</dd>
+          <dt className="term">{label}</dt>
+          <dd>{value}</dd>
         </div>
       ))}
     </dl>

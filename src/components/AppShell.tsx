@@ -6,7 +6,7 @@ import { ChangePasswordDialog } from "../features/auth/ChangePasswordDialog";
 import { navForRole, roleLabel } from "../lib/roles";
 import { DataSourceIndicator } from "./DataSourceIndicator";
 
-const focus = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand";
+const sideButton = "flex w-full items-center gap-2 rounded-control px-3 py-2 text-left text-sm text-ink-soft hover:bg-sky-soft hover:text-ink";
 
 /** Kerangka aplikasi: navigasi menurut peran, nama pengguna, ganti kata sandi, keluar. */
 export function AppShell() {
@@ -18,12 +18,15 @@ export function AppShell() {
 
   return (
     <div className="min-h-screen lg:flex">
-      <aside className="border-b border-line bg-white lg:min-h-screen lg:w-64 lg:border-r lg:border-b-0">
-        <div className="flex items-center justify-between p-4">
-          <span className="text-xl font-bold text-brand-deep">Telaah Reborn</span>
+      <aside className="bg-sky-pale lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-60 lg:shrink-0 lg:flex-col">
+        <div className="flex items-center justify-between px-5 py-4">
+          <div>
+            <p className="font-semibold text-brand-deep">Telaah Reborn</p>
+            <p className="text-xs text-ink-soft">{roleLabel[user.role]}</p>
+          </div>
           <button
             type="button"
-            className={`rounded-control border border-line p-2 lg:hidden ${focus}`}
+            className="rounded-control p-2 hover:bg-sky-soft lg:hidden"
             aria-expanded={menuOpen}
             aria-controls="menu-utama"
             aria-label={menuOpen ? "Tutup menu" : "Buka menu"}
@@ -32,53 +35,46 @@ export function AppShell() {
             {menuOpen ? <X aria-hidden size={20} /> : <Menu aria-hidden size={20} />}
           </button>
         </div>
-        <nav id="menu-utama" aria-label="Menu utama" className={`${menuOpen ? "block" : "hidden"} px-2 pb-4 lg:block`}>
-          <ul className="flex flex-col gap-1">
-            {items.map((item) => (
-              <li key={item.to}>
-                <NavLink
-                  to={item.to}
-                  end={item.end}
-                  onClick={() => setMenuOpen(false)}
-                  className={({ isActive }) =>
-                    `block rounded-control px-3 py-2 text-sm ${focus} ${
-                      isActive ? "bg-sky-soft font-bold text-brand-deep" : "text-ink hover:bg-sky-pale"
-                    }`
-                  }
-                >
-                  {item.label}
-                </NavLink>
-              </li>
-            ))}
-          </ul>
-        </nav>
+
+        <div id="menu-utama" className={`${menuOpen ? "flex" : "hidden"} flex-1 flex-col px-3 pb-4 lg:flex`}>
+          <nav aria-label="Menu utama">
+            <ul className="flex flex-col gap-0.5">
+              {items.map((item) => (
+                <li key={item.to}>
+                  <NavLink
+                    to={item.to}
+                    end={item.end}
+                    onClick={() => setMenuOpen(false)}
+                    className={({ isActive }) =>
+                      `block rounded-control px-3 py-2 text-sm ${
+                        isActive ? "bg-white font-medium text-brand-deep shadow-xs" : "text-ink hover:bg-sky-soft"
+                      }`
+                    }
+                  >
+                    {item.label}
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          <div className="mt-6 border-t border-sky-soft pt-4 lg:mt-auto">
+            <p className="truncate px-3 pb-2 text-sm font-medium">{user.name}</p>
+            <button type="button" onClick={() => setPasswordOpen(true)} className={sideButton}>
+              <KeyRound aria-hidden size={16} /> Ganti kata sandi
+            </button>
+            <button type="button" onClick={() => void logout()} className={sideButton}>
+              <LogOut aria-hidden size={16} /> Keluar
+            </button>
+          </div>
+        </div>
       </aside>
 
-      <div className="flex-1">
-        <header className="flex flex-wrap items-center justify-end gap-2 border-b border-line bg-white px-4 py-2">
-          <p className="mr-auto text-sm">
-            <span className="font-medium">{user.name}</span>{" "}
-            <span className="text-ink-soft">({roleLabel[user.role]})</span>
-          </p>
-          <button
-            type="button"
-            onClick={() => setPasswordOpen(true)}
-            className={`inline-flex items-center gap-1 rounded-control border border-line px-3 py-2 text-sm ${focus}`}
-          >
-            <KeyRound aria-hidden size={16} /> Ganti kata sandi
-          </button>
-          <button
-            type="button"
-            onClick={() => void logout()}
-            className={`inline-flex items-center gap-1 rounded-control border border-line px-3 py-2 text-sm ${focus}`}
-          >
-            <LogOut aria-hidden size={16} /> Keluar
-          </button>
-        </header>
-        <main className="mx-auto max-w-[1280px] p-4 lg:p-6">
+      <div className="min-w-0 flex-1">
+        <main className="mx-auto max-w-[1120px] px-4 py-6 lg:px-10 lg:py-8">
           <Outlet />
         </main>
-        <div className="p-4">
+        <div className="px-4 pb-6 lg:px-10">
           <DataSourceIndicator />
         </div>
       </div>

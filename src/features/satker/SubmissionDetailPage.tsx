@@ -1,19 +1,13 @@
 import { Link, useParams } from "react-router-dom";
+import { BackLink } from "../../components/BackLink";
+import { DocumentPair } from "../../components/DocumentPair";
 import { ErrorState } from "../../components/ErrorState";
 import { LoadingState } from "../../components/LoadingState";
+import { Section } from "../../components/Section";
 import { StatusBadge } from "../../components/StatusBadge";
 import { formatDate } from "../../lib/date";
 import { displayValue } from "../../lib/empty";
-import { formatFileSize } from "./format";
 import { useDecision, useSubmission } from "./hooks";
-
-const statusHint = {
-  PROCESSING: "Berkas Anda sudah diterima dan sedang diproses. Halaman ini diperbarui sendiri.",
-  PROCESSING_FAILED: "Berkas Anda sudah diterima dan sedang diproses. Halaman ini diperbarui sendiri.",
-  AWAITING_REVIEW: "Pemeriksaan otomatis selesai. Pengajuan Anda menunggu keputusan ROCAN.",
-  ACCEPTED: "ROCAN menerima pengajuan Anda.",
-  REJECTED: "ROCAN menolak pengajuan Anda. Baca catatan di bawah.",
-} as const;
 
 /** Detail untuk Satker: dokumen, status, dan keputusan ROCAN. Tanpa hasil AI atau data teknis. */
 export function SubmissionDetailPage() {
@@ -23,95 +17,57 @@ export function SubmissionDetailPage() {
   const decision = useDecision(id, decided);
 
   return (
-    <section className="space-y-6">
-      <Link
-        to="/satker/pengajuan"
-        className="text-sm text-brand-deep underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-      >
-        Kembali ke daftar pengajuan
-      </Link>
-      <h1 className="text-2xl font-bold text-brand-deep">Detail Pengajuan</h1>
+    <div className="space-y-6">
+      <BackLink to="/satker/pengajuan" label="Pengajuan saya" />
 
-      {isPending && <LoadingState label="Memuat pengajuan..." />}
+      {isPending && <LoadingState />}
       {error && <ErrorState message={error.message} onRetry={() => void refetch()} />}
+      {!data && <h1 className="sr-only">Detail Pengajuan</h1>}
       {data && (
         <>
-          <div className="space-y-2 rounded-card border border-line bg-white p-4">
-            <p className="flex flex-wrap items-center gap-2">
-              <span className="font-medium">Status:</span>
+          <header>
+            <h1 className="page-title">Pengajuan RO {data.roCode}</h1>
+            <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-soft">
+              <span>{formatDate(data.submittedAt)}</span>
               <StatusBadge status={data.status} role="SATKER" />
-            </p>
-            <p className="text-sm text-ink-soft">{statusHint[data.status]}</p>
-            {data.previousSubmissionId && (
-              <p className="text-sm">
-                Pengajuan ulang dari{" "}
-                <Link className="text-brand-deep underline" to={`/satker/pengajuan/${data.previousSubmissionId}`}>
-                  pengajuan sebelumnya
+              {data.previousSubmissionId && (
+                <Link className="link" to={`/satker/pengajuan/${data.previousSubmissionId}`}>
+                  Pengajuan sebelumnya
                 </Link>
-                .
-              </p>
-            )}
-            <dl className="grid gap-2 text-sm sm:grid-cols-2">
-              <div>
-                <dt className="text-ink-soft">Kode RO</dt>
-                <dd className="font-medium">{data.roCode}</dd>
-              </div>
-              <div>
-                <dt className="text-ink-soft">Tanggal kirim</dt>
-                <dd className="font-medium">{formatDate(data.submittedAt)}</dd>
-              </div>
-            </dl>
-          </div>
-
-          <div>
-            <h2 className="mb-2 text-lg font-semibold text-brand-deep">Dokumen yang dikirim</h2>
-            <ul className="grid gap-4 sm:grid-cols-2">
-              {data.documents.map((d) => (
-                <li key={d.id} className="rounded-card border border-line bg-white p-4">
-                  <p className="text-sm text-ink-soft">{d.type}</p>
-                  <p className="font-medium break-all">{d.fileName}</p>
-                  <p className="text-sm text-ink-soft">{formatFileSize(d.sizeBytes)}</p>
-                </li>
-              ))}
-            </ul>
-          </div>
+              )}
+            </p>
+          </header>
 
           {decided && (
-            <div className="rounded-card border border-line bg-white p-4">
-              <h2 className="mb-2 text-lg font-semibold text-brand-deep">Keputusan ROCAN</h2>
-              {decision.isPending && <LoadingState label="Memuat keputusan..." />}
+            <Section title="Keputusan ROCAN">
+              {decision.isPending && <LoadingState />}
               {decision.error && (
                 <ErrorState message={decision.error.message} onRetry={() => void decision.refetch()} />
               )}
               {decision.data && (
-                <dl className="space-y-2 text-sm">
-                  <div>
-                    <dt className="text-ink-soft">Keputusan</dt>
-                    <dd className="font-medium">{decision.data.decision === "ACCEPTED" ? "Diterima" : "Ditolak"}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-ink-soft">Catatan</dt>
-                    <dd className="whitespace-pre-wrap">{displayValue(decision.data.note)}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-ink-soft">Tanggal keputusan</dt>
-                    <dd>{formatDate(decision.data.decidedAt)}</dd>
-                  </div>
+                <dl className="grid max-w-2xl gap-x-8 gap-y-2 rounded-card bg-sky-pale p-5 text-sm sm:grid-cols-[auto_1fr]">
+                  <dt className="term sm:pt-0.5">Keputusan</dt>
+                  <dd className="font-medium">{decision.data.decision === "ACCEPTED" ? "Diterima" : "Ditolak"}</dd>
+                  <dt className="term sm:pt-0.5">Catatan</dt>
+                  <dd className="whitespace-pre-wrap">{displayValue(decision.data.note)}</dd>
+                  <dt className="term sm:pt-0.5">Tanggal</dt>
+                  <dd>{formatDate(decision.data.decidedAt)}</dd>
                 </dl>
               )}
+              {decision.data === null && <p className="text-sm text-ink-soft">Belum ada catatan.</p>}
               {data.status === "REJECTED" && (
-                <Link
-                  to={`/satker/ajukan?ulang=${encodeURIComponent(data.id)}`}
-                  className="mt-4 inline-block rounded-control bg-brand-deep px-4 py-2 text-sm font-medium text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-                >
+                <Link to={`/satker/ajukan?ulang=${encodeURIComponent(data.id)}`} className="btn btn-primary mt-4">
                   Ajukan ulang
                 </Link>
               )}
-              {decision.data === null && <p className="text-sm text-ink-soft">Belum ada catatan.</p>}
-            </div>
+            </Section>
           )}
+
+          <Section title="Dokumen">
+            <DocumentPair documents={data.documents} />
+          </Section>
         </>
       )}
-    </section>
+    </div>
   );
 }

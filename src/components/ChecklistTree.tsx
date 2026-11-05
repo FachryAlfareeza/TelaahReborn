@@ -14,7 +14,7 @@ type Props = {
 export function ChecklistTree({ items, onOpenEvidence }: Props) {
   if (items.length === 0) return <p className="text-sm text-ink-soft">Belum ada butir checklist.</p>;
   return (
-    <ul className="space-y-3">
+    <ul className="divide-y divide-line border-y border-line">
       {items.map((n) => (
         <TreeNode key={n.code} node={n} onOpenEvidence={onOpenEvidence} />
       ))}
@@ -28,7 +28,7 @@ function TreeNode({ node, onOpenEvidence }: { node: Screening1Node; onOpenEviden
 
   if (node.children.length === 0) {
     return (
-      <li className="rounded-card border border-line bg-white p-3">
+      <li className="py-3">
         <VerdictRow
           code={node.code}
           title={node.title}
@@ -43,21 +43,21 @@ function TreeNode({ node, onOpenEvidence }: { node: Screening1Node; onOpenEviden
 
   const Icon = open ? ChevronDown : ChevronRight;
   return (
-    <li className="rounded-card border border-line bg-white p-3">
+    <li className="py-3">
       <button
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full flex-wrap items-center gap-2 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+        className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 text-left"
       >
-        <Icon aria-hidden="true" size={16} />
-        <span className="text-sm text-ink-soft">{node.code}</span>
+        <Icon aria-hidden="true" size={16} className="text-ink-soft" />
+        <span className="text-sm text-ink-soft tabular-nums">{node.code}</span>
         <span className="font-medium">{node.title}</span>
         <VerdictBadge kind={kind} />
-        <span className="text-sm text-ink-soft">({node.children.length} butir)</span>
+        <span className="text-sm text-ink-soft">{node.children.length} butir</span>
       </button>
       {open && (
-        <ul className="mt-3 space-y-3 border-l border-line pl-4">
+        <ul className="mt-2 ml-2 divide-y divide-line border-l border-line pl-5">
           {node.children.map((c) => (
             <TreeNode key={c.code} node={c} onOpenEvidence={onOpenEvidence} />
           ))}

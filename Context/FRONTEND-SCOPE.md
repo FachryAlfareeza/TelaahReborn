@@ -269,7 +269,7 @@ terbaca di UI utama.
 
 Semua komponen yang hanya untuk demo **wajib** ditandai dengan cara yang sama dan mencolok:
 
-- Garis tepi **merah terang** (`#FF0000`, 3px, putus-putus) di sekeliling komponen.
+- Garis tepi **merah terang** (`#FF0000`, 3px, garis penuh, sudut siku tanpa lengkung) di sekeliling komponen.
 - Label kecil "DEMO" berlatar merah di pojok komponen.
 - Atribut `data-demo="true"` pada elemen akar.
 - Dibungkus komponen `DemoOnly`, sehingga semua penanda bisa dicari dan dihapus sekaligus.
@@ -300,20 +300,20 @@ desain ROCAN lama.
 
 | Peran warna | Nilai | Pakai untuk |
 |---|---|---|
-| Biru muda dasar | `#BFE3F7` | Latar aksen, panel, sorotan |
-| Biru muda pucat | `#EAF6FD` | Latar halaman |
-| Biru utama | `#3B9AD9` | Tombol utama, tautan, fokus |
-| Biru tua | `#1E5F8E` | Teks di atas biru muda, judul |
-| Teks | `#1F2A37` | Teks isi |
-| Teks sekunder | `#5B6B7B` | Keterangan |
-| Garis | `#D5E3EE` | Batas, pemisah |
-| Sukses | `#2E9E6B` | Diterima, Sesuai |
-| Peringatan | `#E0A100` | Menunggu, Bukti kurang |
-| Galat | `#D64545` | Ditolak, Belum sesuai |
-| Info | `#3B9AD9` | Diproses |
+| Biru muda dasar | `#DBEAF6` | Sorotan, garis di navigasi |
+| Biru muda pucat | `#EEF5FB` | Navigasi samping, panel keputusan ROCAN (latar halaman putih) |
+| Biru utama | `#2B74AD` | Tombol utama, tautan, fokus |
+| Biru tua | `#1B4F78` | Nama aplikasi, menu aktif (judul memakai warna teks) |
+| Teks | `#18222D` | Teks isi dan judul |
+| Teks sekunder | `#5C6875` | Keterangan |
+| Garis | `#E3E8EE` (tegas `#CBD5DF`) | Pemisah antarbagian, batas input |
+| Sukses | `#1F7A52` | Diterima, Sesuai |
+| Peringatan | `#9A6700` | Menunggu, Bukti kurang |
+| Galat | `#C23B3B` | Ditolak, Belum sesuai |
+| Info | `#2B74AD` | Diproses |
 | **Penanda demo** | `#FF0000` | **Khusus komponen demo, jangan dipakai lain** |
 
-Periksa kontras teks minimal 4.5:1. Galat `#D64545` sengaja berbeda dari merah demo.
+Periksa kontras teks minimal 4.5:1. Galat `#C23B3B` sengaja berbeda dari merah demo. Bagian halaman dipisah garis, bukan kotak putih.
 
 ### 9.3 Tipografi
 - Font sans-serif bersih dan ramah, mis. Inter atau Plus Jakarta Sans.

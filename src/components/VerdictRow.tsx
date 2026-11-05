@@ -19,16 +19,12 @@ export function VerdictRow({ title, code, kind, recommendation, evidence = [], o
   const technical = kind === "TECHNICAL";
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-2">
-        {code && <span className="text-sm text-ink-soft">{code}</span>}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        {code && <span className="text-sm text-ink-soft tabular-nums">{code}</span>}
         <span className="font-medium">{title}</span>
         <VerdictBadge kind={kind} />
       </div>
-      {technical && (
-        <p className="text-sm text-ink-soft">
-          Butir ini belum bisa dinilai karena ada masalah pada pemrosesan. Ini bukan kesimpulan reviu.
-        </p>
-      )}
+      {technical && <p className="text-sm text-ink-soft">Belum dinilai karena pemrosesan bermasalah.</p>}
       {!technical && recommendation && (
         <p className="text-sm">
           <span className="font-medium">Saran: </span>

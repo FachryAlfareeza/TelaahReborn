@@ -11,17 +11,18 @@ type Props = {
 export function EvidenceQuote({ evidence, onOpen }: Props) {
   const source = `${evidence.documentType}, halaman ${displayValue(evidence.page)}`;
   return (
-    <figure className="rounded-control border-l-4 border-brand bg-sky-pale p-3 text-sm">
-      <blockquote className="whitespace-pre-wrap">{evidence.quote}</blockquote>
-      <figcaption className="mt-1 flex flex-wrap items-center gap-2 text-ink-soft">
-        <span>Sumber: {source}</span>
+    <figure className="border-l-2 border-sky-soft pl-3 text-sm">
+      <blockquote className="whitespace-pre-wrap text-ink">{evidence.quote}</blockquote>
+      <figcaption className="mt-1 flex flex-wrap items-center gap-x-3 text-xs text-ink-soft">
+        <span>{source}</span>
         {onOpen && evidence.documentType !== "ACUAN" && (
           <button
             type="button"
             onClick={() => onOpen(evidence)}
-            className="rounded-control border border-line bg-white px-2 py-1 text-brand-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+            aria-label={`Lihat di dokumen (${source})`}
+            className="link"
           >
-            Lihat di dokumen ({source})
+            Lihat di dokumen
           </button>
         )}
       </figcaption>

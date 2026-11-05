@@ -1,55 +1,120 @@
 @import "tailwindcss";
 
 @theme {
-  --color-sky-soft: #bfe3f7;
-  --color-sky-pale: #eaf6fd;
-  --color-brand: #3b9ad9;
-  --color-brand-deep: #1e5f8e;
-  --color-ink: #1f2a37;
-  --color-ink-soft: #5b6b7b;
-  --color-line: #d5e3ee;
-  --color-ok: #2e9e6b;
-  --color-warn: #e0a100;
-  --color-bad: #d64545;
-  --color-bad-text: #b83232; /* galat sebagai teks kecil, kontras di atas 4.5:1 */
+  /* Biru muda dipakai untuk bidang (navigasi, sorotan), bukan untuk semua teks. */
+  --color-sky-pale: #eef5fb;
+  --color-sky-soft: #dbeaf6;
+  --color-brand: #2b74ad;
+  --color-brand-deep: #1b4f78;
+  --color-ink: #18222d;
+  --color-ink-soft: #5c6875;
+  --color-line: #e3e8ee;
+  --color-line-strong: #cbd5df;
+  /* Status: semua lolos 4.5:1 di atas putih, jadi aman untuk ikon dan teks. */
+  --color-ok: #1f7a52;
+  --color-warn: #9a6700;
+  --color-bad: #c23b3b;
+  --color-bad-text: #a83232;
   --font-sans: "Inter Variable", "Inter", system-ui, sans-serif;
   --radius-card: 12px;
-  --radius-control: 8px;
+  --radius-control: 6px;
   --text-3xl: 2rem; /* skala 12/14/16/20/24/32 */
   --text-3xl--line-height: 2.5rem;
-  /* Grid 8px: pakai kelipatan genap Tailwind (2, 4, 6, 8 = 8, 16, 24, 32px). */
 }
 
 body {
-  background: var(--color-sky-pale);
+  background: #fff;
   color: var(--color-ink);
   font-family: var(--font-sans);
 }
 
-/* Fokus keyboard terlihat di semua kontrol (cadangan bila kelas lokal tidak ada). */
+/* Satu aturan fokus untuk semua kontrol. Komponen tidak perlu kelas fokus sendiri. */
 :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
-  outline: 2px solid var(--color-brand-deep);
+  outline: 2px solid var(--color-brand);
   outline-offset: 2px;
 }
 
-/* Penanda komponen demo. Warna #FF0000 khusus untuk ini. */
+/* Gaya bersama. Pakai kelas ini, jangan menyalin deret kelas Tailwind di komponen. */
+@layer components {
+  .page-title {
+    @apply text-2xl font-semibold tracking-tight text-ink;
+  }
+  .section-title {
+    @apply text-base font-semibold text-ink;
+  }
+  .term {
+    @apply text-xs text-ink-soft;
+  }
+  .field-label {
+    @apply mb-1 block text-sm font-medium text-ink;
+  }
+  .field {
+    @apply w-full rounded-control border border-line-strong bg-white px-3 py-2 text-sm text-ink disabled:bg-sky-pale;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-control border px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply border-brand bg-brand text-white hover:border-brand-deep hover:bg-brand-deep;
+  }
+  .btn-secondary {
+    @apply border-line-strong bg-white text-ink hover:bg-sky-pale;
+  }
+  .btn-sm {
+    @apply px-2.5 py-1;
+  }
+  .link {
+    @apply text-brand underline underline-offset-2 hover:text-brand-deep;
+  }
+  .error-text {
+    @apply text-sm text-bad-text;
+  }
+}
+
+/* Penanda komponen demo. Warna #FF0000 khusus untuk ini. Garis penuh, sudut siku. */
 .demo-flag {
   position: relative;
-  outline: 3px dashed #ff0000;
-  outline-offset: 2px;
+  border-radius: 0;
+  outline: 3px solid #ff0000;
+  outline-offset: 0;
 }
 .demo-flag::before {
   content: "DEMO";
   position: absolute;
-  top: -10px;
-  right: -2px;
+  top: -3px;
+  right: -3px;
   background: #ff0000;
   color: #fff;
   font-size: 10px;
   font-weight: 700;
-  padding: 1px 6px;
-  border-radius: 4px;
+  line-height: 1;
+  padding: 3px 6px;
+  border-radius: 0;
   z-index: 10;
+}
+
+/* Indikator memuat: garis tipis yang bergerak, tanpa angka kemajuan palsu. */
+@keyframes progress-slide {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+.progress-line {
+  position: relative;
+  height: 2px;
+  overflow: hidden;
+  background: var(--color-line);
+}
+.progress-line::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 33%;
+  background: var(--color-brand);
+  animation: progress-slide 1.2s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

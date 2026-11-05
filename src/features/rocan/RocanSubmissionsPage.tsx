@@ -1,5 +1,5 @@
 import { useId, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { DataTable, type Column } from "../../components/DataTable";
 import { ErrorState } from "../../components/ErrorState";
 import { LoadingState } from "../../components/LoadingState";
@@ -13,15 +13,14 @@ import { emptyFilters, filterSubmissions, type SubmissionFilters } from "./filte
 
 const statusOptions = ["Diproses AI", "Menunggu Pemeriksaan", "Diterima", "Ditolak", "Pemrosesan bermasalah"];
 
-const inputClass =
-  "w-full rounded-control border border-line bg-white px-3 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand";
 
 export function RocanSubmissionsPage() {
   const { user } = useAuth();
   const role = user?.role ?? "ROCAN";
   const { data, isPending, error, refetch } = useSubmissions();
   const ros = useRos();
-  const [filters, setFilters] = useState<SubmissionFilters>(emptyFilters);
+  const [params] = useSearchParams();
+  const [filters, setFilters] = useState<SubmissionFilters>(() => ({ ...emptyFilters, status: params.get("status") ?? "" }));
   const ids = { status: useId(), ro: useId(), satker: useId(), from: useId(), to: useId() };
 
   const rows = useMemo(() => filterSubmissions(data ?? [], filters, role), [data, filters, role]);
@@ -50,7 +49,7 @@ export function RocanSubmissionsPage() {
         <Link
           to={`/rocan/pengajuan/${s.id}`}
           aria-label={`Buka reviu RO ${s.roCode} dari ${s.satkerName}, ${formatDate(s.submittedAt)}`}
-          className="text-brand-deep underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+          className="link"
         >
           Buka reviu
         </Link>
@@ -59,18 +58,18 @@ export function RocanSubmissionsPage() {
   ];
 
   return (
-    <section className="space-y-4">
-      <h1 className="text-2xl font-bold text-brand-deep">Daftar Pengajuan</h1>
+    <div className="space-y-6">
+      <h1 className="page-title">Daftar Pengajuan</h1>
       <form
         aria-label="Saring pengajuan"
-        className="grid gap-3 rounded-card border border-line bg-white p-4 sm:grid-cols-2 lg:grid-cols-5"
+        className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5"
         onSubmit={(e) => e.preventDefault()}
       >
         <div>
-          <label htmlFor={ids.status} className="mb-1 block text-sm font-medium text-brand-deep">
+          <label htmlFor={ids.status} className="field-label">
             Status
           </label>
-          <select id={ids.status} value={filters.status} onChange={(e) => set({ status: e.target.value })} className={inputClass}>
+          <select id={ids.status} value={filters.status} onChange={(e) => set({ status: e.target.value })} className="field">
             <option value="">Semua status</option>
             {statusOptions.map((o) => (
               <option key={o} value={o}>
@@ -80,10 +79,10 @@ export function RocanSubmissionsPage() {
           </select>
         </div>
         <div>
-          <label htmlFor={ids.ro} className="mb-1 block text-sm font-medium text-brand-deep">
+          <label htmlFor={ids.ro} className="field-label">
             Kode RO
           </label>
-          <select id={ids.ro} value={filters.roCode} onChange={(e) => set({ roCode: e.target.value })} className={inputClass}>
+          <select id={ids.ro} value={filters.roCode} onChange={(e) => set({ roCode: e.target.value })} className="field">
             <option value="">Semua RO</option>
             {(ros.data ?? []).map((r) => (
               <option key={r.code} value={r.code}>
@@ -93,7 +92,7 @@ export function RocanSubmissionsPage() {
           </select>
         </div>
         <div>
-          <label htmlFor={ids.satker} className="mb-1 block text-sm font-medium text-brand-deep">
+          <label htmlFor={ids.satker} className="field-label">
             Satker
           </label>
           <input
@@ -101,27 +100,27 @@ export function RocanSubmissionsPage() {
             type="text"
             value={filters.satker}
             onChange={(e) => set({ satker: e.target.value })}
-            className={inputClass}
+            className="field"
           />
         </div>
         <div>
-          <label htmlFor={ids.from} className="mb-1 block text-sm font-medium text-brand-deep">
+          <label htmlFor={ids.from} className="field-label">
             Dikirim dari tanggal
           </label>
-          <input id={ids.from} type="date" value={filters.from} onChange={(e) => set({ from: e.target.value })} className={inputClass} />
+          <input id={ids.from} type="date" value={filters.from} onChange={(e) => set({ from: e.target.value })} className="field" />
         </div>
         <div>
-          <label htmlFor={ids.to} className="mb-1 block text-sm font-medium text-brand-deep">
+          <label htmlFor={ids.to} className="field-label">
             Sampai tanggal
           </label>
-          <input id={ids.to} type="date" value={filters.to} onChange={(e) => set({ to: e.target.value })} className={inputClass} />
+          <input id={ids.to} type="date" value={filters.to} onChange={(e) => set({ to: e.target.value })} className="field" />
         </div>
         {filtered && (
           <div className="sm:col-span-2 lg:col-span-5">
             <button
               type="button"
               onClick={() => setFilters(emptyFilters)}
-              className="rounded-control border border-line px-4 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+              className="btn btn-secondary"
             >
               Hapus semua saringan
             </button>
@@ -140,6 +139,6 @@ export function RocanSubmissionsPage() {
           emptyTitle={filtered ? "Tidak ada pengajuan yang cocok dengan saringan" : "Belum ada pengajuan"}
         />
       )}
-    </section>
+    </div>
   );
 }

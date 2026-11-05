@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
@@ -43,9 +43,9 @@ beforeAll(() => {
 describe("alur Satker", () => {
   it("beranda menampilkan ringkasan dengan label Satker", async () => {
     await setup("/satker");
-    await screen.findByRole("heading", { name: "Ringkasan pengajuan" });
+    const summary = await screen.findByRole("list", { name: "Ringkasan pengajuan" });
     for (const label of ["Terupload", "Diperiksa", "Diterima", "Ditolak"]) {
-      expect(screen.getByText(label)).toBeTruthy();
+      expect(within(summary).getByText(label)).toBeTruthy();
     }
     expect(screen.queryByText("Menunggu Pemeriksaan")).toBeNull();
   });

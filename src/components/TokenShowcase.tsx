@@ -30,12 +30,12 @@ export function TokenShowcase() {
   return (
     <main className="mx-auto max-w-5xl space-y-8 p-8">
       <header>
-        <h1 className="text-3xl font-bold text-brand-deep">Telaah TOR dan RAB</h1>
+        <h1 className="page-title">Telaah TOR dan RAB</h1>
         <p className="mt-2 text-ink-soft">Contoh warna, huruf, dan format. Halaman masuk menyusul.</p>
       </header>
 
       <section aria-labelledby="judul-warna" className="rounded-card bg-white p-6 shadow-sm">
-        <h2 id="judul-warna" className="text-xl font-bold text-brand-deep">
+        <h2 id="judul-warna" className="section-title">
           Warna
         </h2>
         <ul className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-5">
@@ -49,7 +49,7 @@ export function TokenShowcase() {
       </section>
 
       <section aria-labelledby="judul-huruf" className="rounded-card bg-white p-6 shadow-sm">
-        <h2 id="judul-huruf" className="text-xl font-bold text-brand-deep">
+        <h2 id="judul-huruf" className="section-title">
           Ukuran huruf
         </h2>
         <ul className="mt-4 space-y-2">
@@ -62,7 +62,7 @@ export function TokenShowcase() {
       </section>
 
       <section aria-labelledby="judul-format" className="rounded-card bg-white p-6 shadow-sm">
-        <h2 id="judul-format" className="text-xl font-bold text-brand-deep">
+        <h2 id="judul-format" className="section-title">
           Format nilai
         </h2>
         <table className="mt-4 w-full text-left text-sm">
@@ -94,7 +94,7 @@ export function TokenShowcase() {
         </table>
       </section>
 
-      <DemoOnly className="inline-block rounded-control p-3">
+      <DemoOnly className="inline-block p-3">
         <span>Contoh penanda demo</span>
       </DemoOnly>
     </main>

@@ -19,22 +19,22 @@ export function DemoRoleButtons() {
   }
 
   return (
-    <DemoOnly className="mt-6 rounded-control bg-white p-4">
-      <p className="mb-2 text-sm font-medium">Masuk cepat (hanya untuk demo)</p>
+    <DemoOnly className="mt-8 p-4">
+      <p className="mb-2 text-sm font-medium">Masuk cepat</p>
       <div className="flex flex-wrap gap-2">
         {seedUsers.map((u) => (
           <button
             key={u.id}
             type="button"
             onClick={() => enter(u.email, u.password)}
-            className="rounded-control border border-line px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+            className="btn btn-secondary"
           >
             Masuk sebagai {roleLabel[u.role]}
           </button>
         ))}
       </div>
       {error && (
-        <p role="alert" className="mt-2 text-sm text-bad-text">
+        <p role="alert" className="mt-2 error-text">
           {error}
         </p>
       )}

@@ -6,11 +6,11 @@ function Message({ title, text }: { title: string; text: string }) {
   const { user } = useAuth();
   return (
     <div className="mx-auto max-w-md p-8 text-center">
-      <h1 className="text-2xl font-bold text-brand-deep">{title}</h1>
+      <h1 className="page-title">{title}</h1>
       <p className="mt-2 text-ink-soft">{text}</p>
       <Link
         to={user ? homePath[user.role] : "/masuk"}
-        className="mt-4 inline-block rounded-control bg-brand-deep px-4 py-2 text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+        className="mt-4 inline-block btn btn-primary"
       >
         {user ? "Kembali ke beranda" : "Ke halaman masuk"}
       </Link>
@@ -29,7 +29,7 @@ export const NotFoundPage = () => (
 export function PlaceholderPage({ title }: { title: string }) {
   return (
     <section>
-      <h1 className="text-2xl font-bold text-brand-deep">{title}</h1>
+      <h1 className="page-title">{title}</h1>
       <p className="mt-2 text-ink-soft">Halaman ini sedang disiapkan.</p>
     </section>
   );

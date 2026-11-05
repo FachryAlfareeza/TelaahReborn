@@ -6,7 +6,7 @@ import { roleLabel, type Role } from "../../lib/roles";
 import type { User } from "../../types";
 import { useAuth } from "../auth/authState";
 import { useCreateUser, useResetUserPassword, useUpdateUser, useUsers } from "./hooks";
-import { ActiveLabel, errorText, Feedback, Field, inputClass, primaryButton, smallButton } from "./ui";
+import { ActiveLabel, errorText, Feedback, Field } from "./ui";
 
 const roles: Role[] = ["SATKER", "ROCAN", "SUPER_ADMIN"];
 
@@ -87,7 +87,7 @@ export function UsersPage() {
               `Peran ${u.name} sekarang ${roleLabel[e.target.value as Role]}.`,
             )
           }
-          className="rounded-control border border-line bg-white px-2 py-1 text-sm"
+          className="field w-auto py-1"
         >
           {roles.map((r) => (
             <option key={r} value={r}>
@@ -107,7 +107,7 @@ export function UsersPage() {
             type="button"
             aria-label={`${u.active ? "Nonaktifkan" : "Aktifkan"} akun ${u.name}`}
             disabled={u.id === me?.id || update.isPending}
-            className={smallButton}
+            className="btn btn-secondary btn-sm"
             onClick={() =>
               void run(
                 () => update.mutateAsync({ id: u.id, patch: { active: !u.active } }),
@@ -120,7 +120,7 @@ export function UsersPage() {
           <button
             type="button"
             aria-label={`Atur ulang kata sandi ${u.name}`}
-            className={smallButton}
+            className="btn btn-secondary btn-sm"
             onClick={() => setResetFor(u)}
           >
             Atur ulang kata sandi
@@ -131,27 +131,24 @@ export function UsersPage() {
   ];
 
   return (
-    <section className="space-y-6">
-      <h1 className="text-2xl font-bold text-brand-deep">Akun Pengguna</h1>
-      <p className="text-ink-soft">
-        Satker mendaftar sendiri. Akun ROCAN dan Super Admin dibuat di sini. Anda tidak bisa mengubah peran atau
-        menonaktifkan akun Anda sendiri.
-      </p>
+    <div className="space-y-6">
+      <h1 className="page-title">Akun Pengguna</h1>
+      <p className="text-sm text-ink-soft">Akun Satker dibuat lewat pendaftaran. Peran dan status akun Anda sendiri tidak bisa diubah.</p>
 
-      <form aria-label="Tambah akun" onSubmit={(e) => void onAdd(e)} className="space-y-4 rounded-card border border-line bg-white p-4">
-        <h2 className="text-xl font-bold text-brand-deep">Tambah akun</h2>
+      <form aria-label="Tambah akun" onSubmit={(e) => void onAdd(e)} className="space-y-4 border-t border-line pt-6">
+        <h2 className="section-title">Tambah akun</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field id={ids.name} label="Nama">
-            <input id={ids.name} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputClass} />
+            <input id={ids.name} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="field" />
           </Field>
           <Field id={ids.email} label="Email">
-            <input id={ids.email} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputClass} />
+            <input id={ids.email} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="field" />
           </Field>
           <Field id={ids.pass} label="Kata sandi awal (minimal 8 karakter)">
-            <input id={ids.pass} type="password" autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className={inputClass} />
+            <input id={ids.pass} type="password" autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="field" />
           </Field>
           <Field id={ids.role} label="Peran">
-            <select id={ids.role} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role })} className={inputClass}>
+            <select id={ids.role} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role })} className="field">
               {roles.map((r) => (
                 <option key={r} value={r}>
                   {roleLabel[r]}
@@ -161,26 +158,26 @@ export function UsersPage() {
           </Field>
           {form.role === "SATKER" && (
             <Field id={ids.satker} label="Nama satker">
-              <input id={ids.satker} value={form.satkerName} onChange={(e) => setForm({ ...form, satkerName: e.target.value })} className={inputClass} />
+              <input id={ids.satker} value={form.satkerName} onChange={(e) => setForm({ ...form, satkerName: e.target.value })} className="field" />
             </Field>
           )}
         </div>
-        <button type="submit" disabled={create.isPending} className={primaryButton}>
+        <button type="submit" disabled={create.isPending} className="btn btn-primary">
           Tambah akun
         </button>
       </form>
 
       {resetFor && (
-        <form aria-label="Atur ulang kata sandi" onSubmit={(e) => void onReset(e)} className="space-y-4 rounded-card border border-line bg-white p-4">
-          <h2 className="text-xl font-bold text-brand-deep">Atur ulang kata sandi {resetFor.name}</h2>
+        <form aria-label="Atur ulang kata sandi" onSubmit={(e) => void onReset(e)} className="space-y-4 border-t border-line pt-6">
+          <h2 className="section-title">Atur ulang kata sandi {resetFor.name}</h2>
           <Field id={ids.reset} label="Kata sandi baru (minimal 8 karakter)">
-            <input id={ids.reset} type="password" autoComplete="new-password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className={inputClass} />
+            <input id={ids.reset} type="password" autoComplete="new-password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="field" />
           </Field>
           <div className="flex gap-2">
-            <button type="submit" disabled={reset.isPending} className={primaryButton}>
+            <button type="submit" disabled={reset.isPending} className="btn btn-primary">
               Simpan kata sandi
             </button>
-            <button type="button" className={smallButton} onClick={() => setResetFor(null)}>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setResetFor(null)}>
               Batal atur ulang
             </button>
           </div>
@@ -194,6 +191,6 @@ export function UsersPage() {
       {users.data && (
         <DataTable caption="Daftar akun pengguna" columns={columns} rows={users.data} getRowKey={(u) => u.id} emptyTitle="Belum ada akun" />
       )}
-    </section>
+    </div>
   );
 }

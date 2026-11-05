@@ -1,10 +1,7 @@
-import { Sparkles } from "lucide-react";
-
 /** Penanda bahwa hasil berasal dari AI dan masih kandidat, bukan keputusan ROCAN. */
 export function AiCandidateTag() {
   return (
-    <span className="inline-flex items-center gap-1 rounded-control border border-brand bg-sky-soft px-2 py-1 text-xs font-medium text-brand-deep">
-      <Sparkles aria-hidden="true" size={14} />
+    <span className="rounded-sm border border-line-strong px-1.5 py-0.5 text-xs font-medium text-ink-soft">
       Hasil AI (kandidat)
     </span>
   );

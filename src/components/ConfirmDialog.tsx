@@ -65,7 +65,7 @@ export function ConfirmDialog({
         onKeyDown={onKeyDown}
         className="w-full max-w-md rounded-card bg-white p-6 shadow-lg"
       >
-        <h2 id={titleId} className="text-xl font-bold text-brand-deep">
+        <h2 id={titleId} className="section-title">
           {title}
         </h2>
         <div className="mt-2 text-sm text-ink">{children}</div>
@@ -74,14 +74,14 @@ export function ConfirmDialog({
             ref={cancelRef}
             type="button"
             onClick={onCancel}
-            className="rounded-control border border-line px-4 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+            className="btn btn-secondary"
           >
             {cancelLabel}
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className="rounded-control bg-brand-deep px-4 py-2 text-sm font-medium text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+            className="btn btn-primary"
           >
             {confirmLabel}
           </button>

@@ -70,9 +70,6 @@ function PreviewDialog({ title, file, initialPage = 1, onClose }: Props) {
     }
   }
 
-  const btn =
-    "rounded-control border border-line px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-50";
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4">
       <div
@@ -87,16 +84,16 @@ function PreviewDialog({ title, file, initialPage = 1, onClose }: Props) {
           <h2 id={titleId} className="text-lg font-bold break-all text-brand-deep">
             {title}
           </h2>
-          <button ref={closeRef} type="button" onClick={onClose} className={btn}>
+          <button ref={closeRef} type="button" onClick={onClose} className="btn btn-secondary">
             Tutup
           </button>
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <button type="button" className={btn} disabled={page <= 1} onClick={() => goTo(page - 1)}>
+          <button type="button" className="btn btn-secondary" disabled={page <= 1} onClick={() => goTo(page - 1)}>
             Sebelumnya
           </button>
-          <button type="button" className={btn} disabled={page >= max} onClick={() => goTo(page + 1)}>
+          <button type="button" className="btn btn-secondary" disabled={page >= max} onClick={() => goTo(page + 1)}>
             Berikutnya
           </button>
           <form
@@ -116,9 +113,9 @@ function PreviewDialog({ title, file, initialPage = 1, onClose }: Props) {
               max={pageCount ?? undefined}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              className="w-20 rounded-control border border-line px-2 py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+              className="w-20 rounded-control border border-line px-2 py-1"
             />
-            <button type="submit" className={btn}>
+            <button type="submit" className="btn btn-secondary">
               Buka
             </button>
           </form>

@@ -1,4 +1,5 @@
 import { lazy, Suspense, useState } from "react";
+import { FileText } from "lucide-react";
 import { displayValue } from "../lib/empty";
 import { formatFileSize } from "../features/satker/format";
 import type { Submission } from "../types";
@@ -21,25 +22,30 @@ export function DocumentPair({ documents }: { documents: Doc[] }) {
 
   return (
     <div>
-      <ul className="grid gap-4 sm:grid-cols-2">
+      <ul className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
         {slots.map(({ type, doc }) => (
-          <li key={type} className="rounded-card border border-line bg-white p-4">
-            <p className="text-sm text-ink-soft">{type}</p>
-            <p className="font-medium break-all">{displayValue(doc?.fileName)}</p>
-            <p className="text-sm text-ink-soft">
-              {doc ? formatFileSize(doc.sizeBytes) : "—"} · {displayValue(doc?.pageCount)} halaman
-            </p>
-            {doc?.previewUrl ? (
-              <button
-                type="button"
-                onClick={() => setOpen(doc)}
-                className="mt-2 rounded-control border border-line px-3 py-2 text-sm text-brand-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-              >
-                Lihat pratinjau {type}
-              </button>
-            ) : (
-              <p className="mt-2 text-sm text-ink-soft">Pratinjau belum tersedia.</p>
-            )}
+          <li key={type} className="flex gap-3">
+            <FileText aria-hidden="true" size={20} className="mt-0.5 shrink-0 text-ink-soft" />
+            <div className="min-w-0">
+              <p className="term">{type}</p>
+              <p className="font-medium break-all">{displayValue(doc?.fileName)}</p>
+              <p className="text-sm text-ink-soft">
+                {doc ? formatFileSize(doc.sizeBytes) : "—"} · {displayValue(doc?.pageCount)} halaman
+                {doc?.previewUrl ? (
+                  <>
+                    {" · "}
+                    <button type="button" onClick={() => setOpen(doc)} aria-label={`Lihat pratinjau ${type}`} className="link">
+                      Pratinjau
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    {" · "}
+                    <span>Pratinjau belum tersedia.</span>
+                  </>
+                )}
+              </p>
+            </div>
           </li>
         ))}
       </ul>

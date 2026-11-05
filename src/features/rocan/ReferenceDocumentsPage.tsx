@@ -1,5 +1,5 @@
 import { useId, useState, type FormEvent } from "react";
-import { CircleCheck, CircleMinus } from "lucide-react";
+import { ActiveLabel } from "../../components/ActiveLabel";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { DataTable, type Column } from "../../components/DataTable";
 import { ErrorState } from "../../components/ErrorState";
@@ -15,20 +15,8 @@ import {
   useSetReferenceDocumentActive,
 } from "../satker/hooks";
 
-const inputClass =
-  "w-full rounded-control border border-line bg-white px-3 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand";
-const smallButton =
-  "rounded-control border border-line px-3 py-1 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand";
 
-function ActiveLabel({ active }: { active: boolean }) {
-  const Icon = active ? CircleCheck : CircleMinus;
-  return (
-    <span className="inline-flex items-center gap-1">
-      <Icon aria-hidden="true" size={16} className={active ? "text-ok" : "text-ink-soft"} />
-      {active ? "Aktif" : "Nonaktif"}
-    </span>
-  );
-}
+
 
 export function ReferenceDocumentsPage() {
   const categories = useDocumentCategories();
@@ -105,7 +93,7 @@ export function ReferenceDocumentsPage() {
             aria-expanded={viewId === d.id}
             aria-label={`${viewId === d.id ? "Tutup" : "Lihat"} rincian ${d.title}`}
             onClick={() => setViewId(viewId === d.id ? null : d.id)}
-            className={smallButton}
+            className="btn btn-secondary btn-sm"
           >
             {viewId === d.id ? "Tutup rincian" : "Lihat"}
           </button>
@@ -114,7 +102,7 @@ export function ReferenceDocumentsPage() {
             aria-label={`${d.active ? "Nonaktifkan" : "Aktifkan"} ${d.title}`}
             disabled={toggle.isPending}
             onClick={() => void onToggle(d)}
-            className={`${smallButton} disabled:opacity-50`}
+            className={`btn btn-secondary btn-sm disabled:opacity-50`}
           >
             {d.active ? "Nonaktifkan" : "Aktifkan"}
           </button>
@@ -122,7 +110,7 @@ export function ReferenceDocumentsPage() {
             type="button"
             aria-label={`Hapus ${d.title}`}
             onClick={() => setToDelete(d)}
-            className={smallButton}
+            className="btn btn-secondary btn-sm"
           >
             Hapus
           </button>
@@ -134,28 +122,25 @@ export function ReferenceDocumentsPage() {
   const actionError = toggle.error ?? remove.error;
 
   return (
-    <section className="space-y-6">
-      <h1 className="text-2xl font-bold text-brand-deep">Dokumen Acuan</h1>
-      <p className="text-ink-soft">
-        Dokumen acuan dipakai sebagai pembanding saat sistem memeriksa TOR dan RAB. Dokumen yang nonaktif tidak dipakai.
-      </p>
+    <div className="space-y-6">
+      <h1 className="page-title">Dokumen Acuan</h1>
 
       <form
         aria-label="Tambah dokumen acuan"
         onSubmit={(e) => void onSubmit(e)}
-        className="space-y-4 rounded-card border border-line bg-white p-4"
+        className="space-y-4 border-t border-line pt-6"
       >
-        <h2 className="text-xl font-bold text-brand-deep">Tambah dokumen acuan</h2>
+        <h2 className="section-title">Tambah dokumen acuan</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor={ids.category} className="mb-1 block text-sm font-medium text-brand-deep">
+            <label htmlFor={ids.category} className="field-label">
               Kategori
             </label>
             <select
               id={ids.category}
               value={categoryCode}
               onChange={(e) => setCategoryCode(e.target.value)}
-              className={inputClass}
+              className="field"
             >
               <option value="">Pilih kategori</option>
               {(categories.data ?? []).map((c) => (
@@ -166,7 +151,7 @@ export function ReferenceDocumentsPage() {
             </select>
           </div>
           <div>
-            <label htmlFor={ids.title} className="mb-1 block text-sm font-medium text-brand-deep">
+            <label htmlFor={ids.title} className="field-label">
               Judul dokumen
             </label>
             <input
@@ -174,34 +159,33 @@ export function ReferenceDocumentsPage() {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className={inputClass}
+              className="field"
             />
           </div>
         </div>
         <UploadDropzone label="Berkas PDF" file={file} onChange={setFile} disabled={add.isPending} />
         {formError && (
-          <p id={ids.error} role="alert" className="text-sm text-ink">
-            <span className="font-semibold text-bad-text">Galat: </span>
+          <p id={ids.error} role="alert" className="error-text">
             {formError}
           </p>
         )}
         <button
           type="submit"
           disabled={add.isPending}
-          className="rounded-control bg-brand-deep px-4 py-2 text-sm font-medium text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-50"
+          className="btn btn-primary"
         >
           {add.isPending ? "Menambahkan..." : "Tambah dokumen"}
         </button>
       </form>
 
       <div role="status" aria-live="polite">
-        {notice && <p className="text-sm font-medium text-brand-deep">{notice}</p>}
+        {notice && <p className="text-sm text-ok">{notice}</p>}
       </div>
       {actionError && <ErrorState message={actionError.message} />}
 
       {viewed && (
-        <section aria-label="Rincian dokumen acuan" className="rounded-card border border-line bg-white p-4">
-          <h2 className="text-xl font-bold text-brand-deep">{viewed.title}</h2>
+        <section aria-label="Rincian dokumen acuan" className="rounded-card bg-sky-pale p-5">
+          <h2 className="section-title">{viewed.title}</h2>
           <dl className="mt-2 grid gap-1 text-sm sm:grid-cols-[auto_1fr] sm:gap-x-4">
             <dt className="text-ink-soft">Kategori</dt>
             <dd>{categoryName(viewed.categoryCode)}</dd>
@@ -214,7 +198,7 @@ export function ReferenceDocumentsPage() {
               <ActiveLabel active={viewed.active} />
             </dd>
           </dl>
-          <button type="button" onClick={() => setViewId(null)} className={`${smallButton} mt-3`}>
+          <button type="button" onClick={() => setViewId(null)} className={`btn btn-secondary btn-sm mt-3`}>
             Tutup rincian
           </button>
         </section>
@@ -227,7 +211,7 @@ export function ReferenceDocumentsPage() {
         categories.data &&
         categories.data.map((c) => (
           <section key={c.code} aria-labelledby={`grup-${c.code}`} className="space-y-2">
-            <h2 id={`grup-${c.code}`} className="text-xl font-bold text-brand-deep">
+            <h2 id={`grup-${c.code}`} className="section-title">
               {c.name}
             </h2>
             <DataTable
@@ -252,6 +236,6 @@ export function ReferenceDocumentsPage() {
           dibatalkan. Bila hanya ingin berhenti memakainya sementara, pilih Nonaktifkan.
         </p>
       </ConfirmDialog>
-    </section>
+    </div>
   );
 }

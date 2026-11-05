@@ -2,8 +2,6 @@ import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent 
 import { useAuth } from "./authState";
 
 const FOCUSABLE = "button:not([disabled]), input:not([disabled])";
-const inputClass =
-  "mt-1 w-full rounded-control border border-line px-3 py-2 text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand";
 
 /** Dialog ganti kata sandi dengan jebakan fokus. Esc menutup. */
 export function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
@@ -70,7 +68,7 @@ export function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
         onKeyDown={onKeyDown}
         className="w-full max-w-md rounded-card bg-white p-6 shadow-lg"
       >
-        <h2 id={titleId} className="text-xl font-bold text-brand-deep">
+        <h2 id={titleId} className="section-title">
           Ganti kata sandi
         </h2>
         {done ? (
@@ -82,7 +80,7 @@ export function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-control bg-brand-deep px-4 py-2 text-sm font-medium text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                className="btn btn-primary"
               >
                 Tutup
               </button>
@@ -90,20 +88,20 @@ export function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
           </>
         ) : (
           <form onSubmit={onSubmit} className="mt-4 flex flex-col gap-4">
-            <label className="text-sm">
+            <label className="flex flex-col gap-1 text-sm font-medium">
               Kata sandi saat ini
-              <input ref={firstRef} name="currentPassword" type="password" required autoComplete="current-password" className={inputClass} />
+              <input ref={firstRef} name="currentPassword" type="password" required autoComplete="current-password" className="field" />
             </label>
-            <label className="text-sm">
-              Kata sandi baru (minimal 8 karakter)
-              <input name="newPassword" type="password" required minLength={8} autoComplete="new-password" className={inputClass} />
+            <label className="flex flex-col gap-1 text-sm font-medium">
+              Kata sandi baru (min. 8 karakter)
+              <input name="newPassword" type="password" required minLength={8} autoComplete="new-password" className="field" />
             </label>
-            <label className="text-sm">
+            <label className="flex flex-col gap-1 text-sm font-medium">
               Ulangi kata sandi baru
-              <input name="confirm" type="password" required autoComplete="new-password" className={inputClass} />
+              <input name="confirm" type="password" required autoComplete="new-password" className="field" />
             </label>
             {error && (
-              <p role="alert" className="text-sm text-bad-text">
+              <p role="alert" className="error-text">
                 {error}
               </p>
             )}
@@ -111,14 +109,14 @@ export function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-control border border-line px-4 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                className="btn btn-secondary"
               >
                 Batal
               </button>
               <button
                 type="submit"
                 disabled={busy}
-                className="rounded-control bg-brand-deep px-4 py-2 text-sm font-medium text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-60"
+                className="btn btn-primary"
               >
                 {busy ? "Menyimpan..." : "Simpan"}
               </button>

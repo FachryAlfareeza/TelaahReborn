@@ -5,8 +5,8 @@ import { getApiClient } from "../api";
 export function DataSourceIndicator() {
   if (getApiClient().mode !== "mock") return null;
   return (
-    <DemoOnly>
-      <p className="px-2 py-1 text-sm">Sumber data: contoh (mock), tersimpan di peramban ini.</p>
+    <DemoOnly className="inline-block">
+      <p className="px-3 py-1.5 pr-14 text-sm">Data contoh (mock), disimpan di peramban ini.</p>
     </DemoOnly>
   );
 }

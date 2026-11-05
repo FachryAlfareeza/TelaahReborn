@@ -41,7 +41,7 @@ export function UploadDropzone({ label, file, onChange, maxSizeMb = 20, disabled
 
   return (
     <div>
-      <label htmlFor={inputId} className="mb-1 block text-sm font-medium text-brand-deep">
+      <label htmlFor={inputId} className="field-label">
         {label}
       </label>
       <div
@@ -51,12 +51,12 @@ export function UploadDropzone({ label, file, onChange, maxSizeMb = 20, disabled
         }}
         onDragLeave={() => setDragging(false)}
         onDrop={onDrop}
-        className={`flex flex-col items-center gap-2 rounded-card border-2 border-dashed p-6 text-center ${
-          dragging ? "border-brand bg-sky-soft" : "border-line bg-white"
+        className={`flex flex-wrap items-center gap-3 rounded-control border border-dashed px-4 py-3 ${
+          dragging ? "border-brand bg-sky-pale" : "border-line-strong bg-white"
         }`}
       >
-        <Upload aria-hidden="true" size={24} className="text-brand-deep" />
-        <p className="text-sm text-ink-soft">Seret berkas PDF ke sini, atau pilih dari perangkat. Maksimal {maxSizeMb} MB.</p>
+        <Upload aria-hidden="true" size={18} className="text-ink-soft" />
+        <p className="text-sm text-ink-soft">PDF, maks. {maxSizeMb} MB. Bisa diseret ke sini.</p>
         <input
           ref={inputRef}
           id={inputId}
@@ -69,7 +69,7 @@ export function UploadDropzone({ label, file, onChange, maxSizeMb = 20, disabled
             accept(e.target.files?.[0]);
             e.target.value = "";
           }}
-          className="text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+          className="text-sm"
         />
         {file && (
           <p className="flex items-center gap-1 text-sm font-medium">
@@ -81,7 +81,7 @@ export function UploadDropzone({ label, file, onChange, maxSizeMb = 20, disabled
                 setError(null);
                 onChange(null);
               }}
-              className="ml-2 rounded-control text-brand-deep underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+              className="ml-2 link"
             >
               Hapus
             </button>
@@ -89,8 +89,7 @@ export function UploadDropzone({ label, file, onChange, maxSizeMb = 20, disabled
         )}
       </div>
       {error && (
-        <p id={errorId} role="alert" className="mt-1 text-sm text-ink">
-          <span className="font-semibold text-bad-text">Galat: </span>
+        <p id={errorId} role="alert" className="mt-1 error-text">
           {error}
         </p>
       )}

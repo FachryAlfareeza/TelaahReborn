@@ -6,7 +6,7 @@ import { LoadingState } from "../../components/LoadingState";
 import type { Ro } from "../../types";
 import { useRos } from "../satker/hooks";
 import { useCreateRo, useDeleteRo, useUpdateRo } from "./hooks";
-import { ActiveLabel, errorText, Feedback, Field, inputClass, primaryButton, smallButton } from "./ui";
+import { ActiveLabel, errorText, Feedback, Field } from "./ui";
 
 export function RoPage() {
   const ros = useRos();
@@ -74,7 +74,7 @@ export function RoPage() {
           <button
             type="button"
             aria-label={`Ubah RO ${r.code}`}
-            className={smallButton}
+            className="btn btn-secondary btn-sm"
             onClick={() => {
               setEditing(r);
               setEditText(r.description);
@@ -85,7 +85,7 @@ export function RoPage() {
           <button
             type="button"
             aria-label={`${r.active ? "Nonaktifkan" : "Aktifkan"} RO ${r.code}`}
-            className={smallButton}
+            className="btn btn-secondary btn-sm"
             disabled={update.isPending}
             onClick={() =>
               void run(
@@ -96,7 +96,7 @@ export function RoPage() {
           >
             {r.active ? "Nonaktifkan" : "Aktifkan"}
           </button>
-          <button type="button" aria-label={`Hapus RO ${r.code}`} className={smallButton} onClick={() => setToDelete(r)}>
+          <button type="button" aria-label={`Hapus RO ${r.code}`} className="btn btn-secondary btn-sm" onClick={() => setToDelete(r)}>
             Hapus
           </button>
         </div>
@@ -105,38 +105,35 @@ export function RoPage() {
   ];
 
   return (
-    <section className="space-y-6">
-      <h1 className="text-2xl font-bold text-brand-deep">Master RO</h1>
-      <p className="text-ink-soft">
-        Daftar Rincian Output (RO) yang bisa dipilih Satker saat mengajukan. RO yang nonaktif tidak bisa dipilih.
-      </p>
+    <div className="space-y-6">
+      <h1 className="page-title">Master RO</h1>
 
-      <form aria-label="Tambah RO" onSubmit={(e) => void onAdd(e)} className="space-y-4 rounded-card border border-line bg-white p-4">
-        <h2 className="text-xl font-bold text-brand-deep">Tambah RO</h2>
+      <form aria-label="Tambah RO" onSubmit={(e) => void onAdd(e)} className="space-y-4 border-t border-line pt-6">
+        <h2 className="section-title">Tambah RO</h2>
         <div className="grid gap-4 sm:grid-cols-[1fr_3fr]">
           <Field id={ids.code} label="Kode RO">
-            <input id={ids.code} value={code} onChange={(e) => setCode(e.target.value)} className={inputClass} />
+            <input id={ids.code} value={code} onChange={(e) => setCode(e.target.value)} className="field" />
           </Field>
           <Field id={ids.desc} label="Deskripsi RO">
-            <input id={ids.desc} value={description} onChange={(e) => setDescription(e.target.value)} className={inputClass} />
+            <input id={ids.desc} value={description} onChange={(e) => setDescription(e.target.value)} className="field" />
           </Field>
         </div>
-        <button type="submit" disabled={create.isPending} className={primaryButton}>
+        <button type="submit" disabled={create.isPending} className="btn btn-primary">
           Tambah RO
         </button>
       </form>
 
       {editing && (
-        <form aria-label="Ubah RO" onSubmit={(e) => void onSaveEdit(e)} className="space-y-4 rounded-card border border-line bg-white p-4">
-          <h2 className="text-xl font-bold text-brand-deep">Ubah RO {editing.code}</h2>
+        <form aria-label="Ubah RO" onSubmit={(e) => void onSaveEdit(e)} className="space-y-4 border-t border-line pt-6">
+          <h2 className="section-title">Ubah RO {editing.code}</h2>
           <Field id={ids.edit} label="Deskripsi baru">
-            <input id={ids.edit} value={editText} onChange={(e) => setEditText(e.target.value)} className={inputClass} />
+            <input id={ids.edit} value={editText} onChange={(e) => setEditText(e.target.value)} className="field" />
           </Field>
           <div className="flex gap-2">
-            <button type="submit" disabled={update.isPending} className={primaryButton}>
+            <button type="submit" disabled={update.isPending} className="btn btn-primary">
               Simpan perubahan
             </button>
-            <button type="button" className={smallButton} onClick={() => setEditing(null)}>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setEditing(null)}>
               Batal ubah
             </button>
           </div>
@@ -157,6 +154,6 @@ export function RoPage() {
           berhenti memakainya, pilih Nonaktifkan.
         </p>
       </ConfirmDialog>
-    </section>
+    </div>
   );
 }

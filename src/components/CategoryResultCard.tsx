@@ -12,25 +12,25 @@ type Props = {
 export function CategoryResultCard({ result, onOpenEvidence }: Props) {
   const hasTechnical = result.questions.some((q) => q.technicalStatus !== "NORMAL");
   return (
-    <div className="space-y-4 rounded-card border border-line bg-white p-4">
-      <dl className="grid gap-2 text-sm sm:grid-cols-2">
+    <div className="space-y-3">
+      <dl className="flex flex-wrap gap-x-10 gap-y-2">
         <div>
-          <dt className="text-ink-soft">Kategori hasil</dt>
-          <dd className="text-lg font-semibold text-brand-deep">{categoryLabel(result.category)}</dd>
+          <dt className="term">Kategori hasil</dt>
+          <dd className="text-lg font-semibold">{categoryLabel(result.category)}</dd>
         </div>
         <div>
-          <dt className="text-ink-soft">Pertanyaan penentu</dt>
-          <dd className="font-medium">{displayValue(result.decidingQuestion)}</dd>
+          <dt className="term">Pertanyaan penentu</dt>
+          <dd className="text-lg font-semibold">{displayValue(result.decidingQuestion)}</dd>
         </div>
       </dl>
       {hasTechnical && (
-        <p role="note" className="text-sm text-ink-soft">
-          Sebagian pertanyaan mengalami pemrosesan bermasalah, jadi kategori ini perlu dicek dengan teliti.
+        <p role="note" className="text-sm text-warn">
+          Sebagian pertanyaan gagal diproses. Periksa kategori ini dengan teliti.
         </p>
       )}
-      <ul className="space-y-3">
+      <ul className="divide-y divide-line border-y border-line">
         {result.questions.map((q) => (
-          <li key={q.code} className="rounded-control border border-line p-3">
+          <li key={q.code} className="py-3">
             <VerdictRow
               code={q.code}
               title={q.text}

@@ -30,17 +30,17 @@ export function DecisionPanel({ decision, canDecide, ready, pending = false, err
 
   if (decision) {
     return (
-      <dl className="space-y-2 rounded-card border border-line bg-white p-4 text-sm">
+      <dl className="grid gap-x-8 gap-y-2 rounded-card bg-sky-pale p-5 text-sm sm:grid-cols-3">
         <div>
-          <dt className="text-ink-soft">Keputusan</dt>
+          <dt className="term">Keputusan</dt>
           <dd className="font-medium">{choiceLabel[decision.decision]}</dd>
         </div>
         <div>
-          <dt className="text-ink-soft">Catatan</dt>
+          <dt className="term">Catatan</dt>
           <dd className="whitespace-pre-wrap">{displayValue(decision.note || null)}</dd>
         </div>
         <div>
-          <dt className="text-ink-soft">Diputuskan oleh</dt>
+          <dt className="term">Diputuskan oleh</dt>
           <dd>
             {decision.decidedBy}, {formatDate(decision.decidedAt)}
           </dd>
@@ -51,7 +51,7 @@ export function DecisionPanel({ decision, canDecide, ready, pending = false, err
 
   if (!ready) {
     return (
-      <p className="rounded-card border border-line bg-white p-4 text-sm text-ink-soft">
+      <p className="text-sm text-ink-soft">
         Keputusan bisa diberikan setelah pemeriksaan otomatis selesai.
       </p>
     );
@@ -59,7 +59,7 @@ export function DecisionPanel({ decision, canDecide, ready, pending = false, err
 
   if (!canDecide) {
     return (
-      <p className="rounded-card border border-line bg-white p-4 text-sm text-ink-soft">
+      <p className="text-sm text-ink-soft">
         Hanya ROCAN yang dapat menerima atau menolak pengajuan.
       </p>
     );
@@ -74,9 +74,9 @@ export function DecisionPanel({ decision, canDecide, ready, pending = false, err
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="space-y-4 rounded-card border border-line bg-white p-4">
-      <fieldset className="space-y-2">
-        <legend className="mb-1 text-sm font-medium text-brand-deep">Keputusan Anda</legend>
+    <form onSubmit={onSubmit} noValidate className="max-w-2xl space-y-4 rounded-card bg-sky-pale p-5">
+      <fieldset className="flex gap-6">
+        <legend className="sr-only">Keputusan</legend>
         {(["ACCEPTED", "REJECTED"] as const).map((c) => (
           <label key={c} className="flex items-center gap-2">
             <input
@@ -92,8 +92,8 @@ export function DecisionPanel({ decision, canDecide, ready, pending = false, err
         ))}
       </fieldset>
       <div>
-        <label htmlFor={noteId} className="mb-1 block text-sm font-medium text-brand-deep">
-          Catatan {choice === "REJECTED" ? "(wajib)" : "(boleh kosong)"}
+        <label htmlFor={noteId} className="field-label">
+          Catatan{choice === "REJECTED" ? " (wajib)" : ""}
         </label>
         <textarea
           id={noteId}
@@ -101,23 +101,23 @@ export function DecisionPanel({ decision, canDecide, ready, pending = false, err
           onChange={(e) => setNote(e.target.value)}
           rows={4}
           disabled={pending}
-          className="w-full rounded-control border border-line px-3 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+          className="field"
         />
       </div>
       {problem && (
-        <p role="alert" className="text-sm">
+        <p role="alert" className="error-text">
           {problem}
         </p>
       )}
       {errorMessage && (
-        <p role="alert" className="text-sm">
+        <p role="alert" className="error-text">
           Keputusan belum tersimpan. {errorMessage}
         </p>
       )}
       <button
         type="submit"
         disabled={pending}
-        className="rounded-control bg-brand-deep px-6 py-2 font-medium text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-60"
+        className="btn btn-primary"
       >
         {pending ? "Menyimpan..." : "Simpan keputusan"}
       </button>

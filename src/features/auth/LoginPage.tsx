@@ -5,8 +5,6 @@ import { DataSourceIndicator } from "../../components/DataSourceIndicator";
 import { DemoRoleButtons } from "./DemoRoleButtons";
 import { useAuth } from "./authState";
 
-const inputClass =
-  "mt-1 w-full rounded-control border border-line bg-white px-3 py-2 text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand";
 
 export function LoginPage() {
   const { user, loading, login, register } = useAuth();
@@ -42,30 +40,32 @@ export function LoginPage() {
 
   const isLogin = mode === "masuk";
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center p-4">
-      <h1 className="text-2xl font-bold text-brand-deep">Telaah Reborn</h1>
-      <p className="mt-1 text-sm text-ink-soft">Reviu TOR dan RAB berbantuan AI, Biro Perencanaan.</p>
-
-      <div className="mt-6 rounded-card border border-line bg-white p-6">
-        <h2 className="text-xl font-bold text-brand-deep">{isLogin ? "Masuk" : "Daftar sebagai Satker"}</h2>
+    <div className="min-h-screen lg:grid lg:grid-cols-[2fr_3fr]">
+      <header className="bg-sky-pale px-6 py-8 lg:flex lg:flex-col lg:justify-between lg:px-12 lg:py-12">
+        <p className="font-semibold text-brand-deep">Telaah Reborn</p>
+        <p className="mt-2 max-w-xs text-sm text-ink-soft lg:mt-0">Reviu TOR dan RAB, Biro Perencanaan.</p>
+      </header>
+    <main className="mx-auto flex max-w-sm flex-col justify-center px-6 py-10 lg:min-h-screen">
+      <div>
+        <h1 className="page-title">{isLogin ? "Masuk" : "Daftar sebagai Satker"}</h1>
         <form key={mode} onSubmit={onSubmit} className="mt-4 flex flex-col gap-4">
           {!isLogin && (
             <>
-              <label className="text-sm">
+              <label className="flex flex-col gap-1 text-sm font-medium">
                 Nama lengkap
-                <input name="name" type="text" required autoComplete="name" className={inputClass} />
+                <input name="name" type="text" required autoComplete="name" className="field" />
               </label>
-              <label className="text-sm">
+              <label className="flex flex-col gap-1 text-sm font-medium">
                 Nama satker
-                <input name="satkerName" type="text" required className={inputClass} />
+                <input name="satkerName" type="text" required className="field" />
               </label>
             </>
           )}
-          <label className="text-sm">
+          <label className="flex flex-col gap-1 text-sm font-medium">
             Email
-            <input name="email" type="email" required autoComplete="email" className={inputClass} />
+            <input name="email" type="email" required autoComplete="email" className="field" />
           </label>
-          <label className="text-sm">
+          <label className="flex flex-col gap-1 text-sm font-medium">
             Kata sandi
             <input
               name="password"
@@ -73,19 +73,19 @@ export function LoginPage() {
               required
               minLength={isLogin ? undefined : 8}
               autoComplete={isLogin ? "current-password" : "new-password"}
-              className={inputClass}
+              className="field"
             />
             {!isLogin && <span className="text-xs text-ink-soft">Minimal 8 karakter.</span>}
           </label>
           {error && (
-            <p role="alert" className="text-sm text-bad-text">
+            <p role="alert" className="error-text">
               {error}
             </p>
           )}
           <button
             type="submit"
             disabled={busy}
-            className="rounded-control bg-brand-deep px-4 py-2 font-medium text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-60"
+            className="btn btn-primary"
           >
             {busy ? "Memproses..." : isLogin ? "Masuk" : "Daftar"}
           </button>
@@ -96,7 +96,7 @@ export function LoginPage() {
             setError(null);
             setMode(isLogin ? "daftar" : "masuk");
           }}
-          className="mt-4 text-sm text-brand-deep underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+          className="mt-4 link text-sm"
         >
           {isLogin ? "Belum punya akun? Daftar sebagai Satker" : "Sudah punya akun? Masuk"}
         </button>
@@ -107,5 +107,6 @@ export function LoginPage() {
         <DataSourceIndicator />
       </div>
     </main>
+    </div>
   );
 }
