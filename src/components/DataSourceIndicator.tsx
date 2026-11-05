@@ -6,7 +6,7 @@ export function DataSourceIndicator() {
   if (getApiClient().mode !== "mock") return null;
   return (
     <DemoOnly>
-      <p className="px-2 py-1 text-sm">Sumber data: contoh (mock), tersimpan di peramban ini.</p>
+      <p className="px-2 py-1 text-sm">Sumber data: contoh (mock), tersimpan di website ini.</p>
     </DemoOnly>
   );
 }

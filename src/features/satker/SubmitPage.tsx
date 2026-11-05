@@ -16,7 +16,7 @@ function LocalPreview({ file, label }: { file: File; label: string }) {
         Pratinjau {label}: {file.name} ({formatFileSize(file.size)})
       </summary>
       <object data={url} type="application/pdf" aria-label={`Pratinjau ${label}`} className="mt-2 h-96 w-full">
-        <p className="text-sm text-ink-soft">Peramban Anda tidak dapat menampilkan pratinjau PDF.</p>
+        <p className="text-sm text-ink-soft">Website Anda tidak dapat menampilkan pratinjau PDF.</p>
       </object>
     </details>
   );
