@@ -9,10 +9,7 @@ type Props = {
   progress?: Progress;
 };
 
-/**
- * Bagian belakang aplikasi (hanya ROCAN): provenance, jalur ekstraksi, JSON mentah.
- * Tidak dibutuhkan untuk memahami hasil; semua kesimpulan sudah terbaca di atas.
- */
+/** Hanya ROCAN; tidak dibutuhkan untuk memahami hasil. */
 export function TechnicalSection({ requestId, result, progress }: Props) {
   const panelId = useId();
   const [open, setOpen] = useState(false);

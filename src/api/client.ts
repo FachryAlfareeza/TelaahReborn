@@ -48,7 +48,7 @@ export type ApiErrorCode =
   | "UNAVAILABLE"
   | "SERVER";
 
-/** Satu-satunya jenis galat yang keluar dari klien API. Pesan sudah dalam Bahasa Indonesia. */
+/** Satu jenis galat untuk semua kegagalan klien; pesannya sudah berbahasa Indonesia. */
 export class ApiError extends Error {
   readonly code: ApiErrorCode;
   constructor(code: ApiErrorCode, message: string) {
@@ -57,8 +57,6 @@ export class ApiError extends Error {
     this.code = code;
   }
 }
-
-// --- Masukan, mengikuti kontrak §3 -------------------------------------------
 
 export type LoginInput = { nip: string; password: string };
 
@@ -184,7 +182,7 @@ export type CreateCurationExportInput = {
   approved_to?: string;
 };
 
-/** Antarmuka tetap. Semua akses data lewat sini; adapter real dan mock memenuhinya. */
+/** Semua akses data lewat sini; adapter real dan mock memenuhinya. */
 export interface ApiClient {
   /** Sumber data, dipakai untuk penanda demo. */
   readonly mode: "mock" | "real";
@@ -250,6 +248,8 @@ export interface ApiClient {
   reingestReferenceDocument(id: string): Promise<void>;
   deactivateReferenceDocument(id: string): Promise<ReferenceDocument>;
   activateReferenceDocument(id: string): Promise<ReferenceDocument>;
+  /** Berkas dokumen acuan untuk pratinjau. Belum ada di kontrak v2.1 (usulan BACKEND-APPENDIX). */
+  getReferenceDocumentFile(id: string): Promise<Blob>;
 
   // §3.9 Tabel acuan (rocan)
   startTableExtraction(input: StartTableExtractionInput): Promise<TableExtraction>;

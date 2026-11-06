@@ -2,7 +2,7 @@ import { EMPTY_VALUE } from "./empty";
 
 const numberFormat = new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 });
 
-/** Satu-satunya tempat memformat rupiah. Contoh: 1500000 menjadi "Rp 1.500.000". */
+/** 1500000 menjadi "Rp 1.500.000". */
 export function formatIdr(amount: number | null | undefined): string {
   if (amount === null || amount === undefined || !Number.isFinite(amount)) return EMPTY_VALUE;
   const rounded = Math.round(amount);

@@ -1,4 +1,5 @@
-import { useEffect, useId, useRef, type KeyboardEvent, type ReactNode } from "react";
+import { useId, type ReactNode } from "react";
+import { useFocusTrap } from "./useFocusTrap";
 
 type Props = {
   open: boolean;
@@ -10,9 +11,6 @@ type Props = {
   onCancel: () => void;
 };
 
-const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
-/** Dialog konfirmasi dengan jebakan fokus. Esc membatalkan, fokus kembali ke pemicu. */
 export function ConfirmDialog({
   open,
   title,
@@ -23,37 +21,9 @@ export function ConfirmDialog({
   onCancel,
 }: Props) {
   const titleId = useId();
-  const ref = useRef<HTMLDivElement>(null);
-  const cancelRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const previous = document.activeElement as HTMLElement | null;
-    cancelRef.current?.focus();
-    return () => previous?.focus();
-  }, [open]);
+  const { ref, onKeyDown } = useFocusTrap<HTMLDivElement>(open, onCancel);
 
   if (!open) return null;
-
-  function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
-    if (e.key === "Escape") {
-      e.stopPropagation();
-      onCancel();
-      return;
-    }
-    if (e.key !== "Tab") return;
-    const items = ref.current?.querySelectorAll<HTMLElement>(FOCUSABLE);
-    if (!items || items.length === 0) return;
-    const first = items[0];
-    const last = items[items.length - 1];
-    if (e.shiftKey && document.activeElement === first) {
-      e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && document.activeElement === last) {
-      e.preventDefault();
-      first.focus();
-    }
-  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4">
@@ -71,7 +41,6 @@ export function ConfirmDialog({
         <div className="mt-2 text-sm text-ink">{children}</div>
         <div className="mt-6 flex justify-end gap-2">
           <button
-            ref={cancelRef}
             type="button"
             onClick={onCancel}
             className="btn btn-secondary"

@@ -6,7 +6,6 @@ import { LoadingState } from "../../components/LoadingState";
 import { formatDate } from "../../lib/date";
 import { useAuth } from "../auth/authState";
 
-/** Notifikasi in-app belum dibaca (PRD §8.13, kontrak §3.11). */
 export function NotificationsPage() {
   const { user } = useAuth();
   const list = useNotifications();

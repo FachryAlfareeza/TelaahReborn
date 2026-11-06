@@ -1,23 +1,20 @@
 import { useState, type ReactNode } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { inspectionTypeLabel } from "../lib/verdict";
-import type { ChecklistItem, Evidence, InspectionType, ResultItem } from "../types";
+import { INSPECTION_ORDER, inspectionTypeLabel } from "../lib/verdict";
+import type { ChecklistItem, Evidence, ResultItem } from "../types";
 import { ResultItemView } from "./ResultItemView";
 import { VerdictBadge } from "./VerdictBadge";
 
-/** Urutan bagian hasil (PRD FR-VER-02): Lapis A/format, substansi, tabel acuan. Screening 2 terpisah. */
-const ORDER: InspectionType[] = ["format_completeness", "substance", "tor_rab_alignment", "reference_table"];
+/** Screening 2 ditampilkan terpisah. */
+const ORDER = INSPECTION_ORDER.filter((t) => t !== "categorization");
 
 type Props = {
   items: ResultItem[];
-  /** Item checklist versi yang dipakai, untuk teks kriteria dan relasi induk-anak. */
   checklist?: ChecklistItem[];
   onOpenEvidence?: (evidence: Evidence) => void;
-  /** Isi tambahan per item (mis. editor ROCAN). */
   renderExtra?: (item: ResultItem) => ReactNode;
 };
 
-/** Hasil Screening 1 per bagian. Sub-item tampil di bawah induknya bila relasinya diketahui. */
 export function ResultSections({ items, checklist = [], onOpenEvidence, renderExtra }: Props) {
   const byId = new Map(checklist.map((c) => [c.item_id, c]));
   const parentOf = (item: ResultItem) => byId.get(item.item_id)?.parent_item_id ?? null;

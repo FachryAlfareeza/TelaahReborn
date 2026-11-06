@@ -112,6 +112,13 @@ describe("DataTable", () => {
     await userEvent.click(screen.getByRole("button", { name: /Nama/ }));
     expect(screen.getAllByRole("rowheader").map((e) => e.textContent)).toEqual(["A", "B"]);
   });
+
+  it("cari cepat menyaring baris dan menampilkan jumlahnya", async () => {
+    render(<DataTable caption="Contoh" columns={columns} rows={rows} getRowKey={(r) => r.id} />);
+    await userEvent.type(screen.getByLabelText("Cari di contoh"), "a");
+    expect(screen.getAllByRole("rowheader").map((e) => e.textContent)).toEqual(["A"]);
+    expect(screen.getByText("1 dari 2 baris")).toBeInTheDocument();
+  });
 });
 
 describe("ConfirmDialog", () => {

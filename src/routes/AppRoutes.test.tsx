@@ -28,11 +28,11 @@ describe("rute dan menu per peran (PRD §5)", () => {
     expect(nav.textContent).not.toContain("Checklist");
   });
 
-  it("ROCAN mengelola checklist, dokumen acuan, tabel acuan, Master RO, dan kurasi", async () => {
+  it("ROCAN mengelola checklist, acuan (dokumen dan tabel), Master RO, dan kurasi", async () => {
     await setupApp("/", "rocan");
     await screen.findByRole("heading", { name: "Beranda ROCAN" });
     const nav = screen.getByRole("navigation", { name: "Menu utama" });
-    for (const label of ["Checklist", "Dokumen Acuan", "Tabel Acuan", "Master RO", "Kurasi Data"]) {
+    for (const label of ["Checklist", "Acuan", "Master RO", "Kurasi Data"]) {
       expect(nav.textContent).toContain(label);
     }
     expect(nav.textContent).not.toContain("Akun Pengguna");

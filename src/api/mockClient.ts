@@ -538,6 +538,8 @@ export function createMockClient(options: MockOptions = {}): ApiClient {
   const stageMs = processingMs / STAGES.length;
   /** Isi berkas unggahan; tidak disimpan ke localStorage agar kuota tidak habis. */
   const files = new Map<string, Blob>();
+  /** Berkas dokumen acuan yang diunggah selama sesi, per id dokumen. */
+  const referenceFiles = new Map<string, Blob>();
 
   function load(): Db {
     const raw = storage.getItem(DB_KEY);
@@ -762,7 +764,7 @@ export function createMockClient(options: MockOptions = {}): ApiClient {
   return {
     mode: "mock",
 
-    // --- Autentikasi ---------------------------------------------------------
+    // Autentikasi
     login: (input) =>
       withDb((db) => {
         const user = db.users.find((u) => u.nip === input.nip.trim());
@@ -781,7 +783,7 @@ export function createMockClient(options: MockOptions = {}): ApiClient {
         return user ? publicUser(user) : null;
       }),
 
-    // --- Akun -----------------------------------------------------------------
+    // Akun
     listUsers: (role) =>
       withDb((db) => {
         requireRole(db, "super_admin");
@@ -851,7 +853,7 @@ export function createMockClient(options: MockOptions = {}): ApiClient {
         user.updated_at = iso(now());
       }),
 
-    // --- Master RO --------------------------------------------------------------
+    // Master RO
     listFiscalYears: () =>
       withDb((db) => {
         me(db);
@@ -1020,7 +1022,7 @@ export function createMockClient(options: MockOptions = {}): ApiClient {
         return clone(ds);
       }),
 
-    // --- Pengajuan ------------------------------------------------------------
+    // Pengajuan
     listReviewRequests: (f = {}) =>
       withDb((db) => {
         const user = requireRole(db, "satker", "rocan");
@@ -1123,7 +1125,7 @@ export function createMockClient(options: MockOptions = {}): ApiClient {
         return publicRequest(req);
       }),
 
-    // --- Pipeline -------------------------------------------------------------
+    // Pipeline
     retryReview: (id) =>
       withDb((db) => {
         const user = requireRole(db, "rocan");
@@ -1135,7 +1137,7 @@ export function createMockClient(options: MockOptions = {}): ApiClient {
       }),
     getProgress: (id) => withDb((db) => progressOf(visibleRequest(db, requireRole(db, "satker", "rocan"), id))),
 
-    // --- Hasil ----------------------------------------------------------------
+    // Hasil
     getReviewResult: (id) =>
       withDb((db) => {
         const user = requireRole(db, "rocan");
@@ -1290,7 +1292,7 @@ export function createMockClient(options: MockOptions = {}): ApiClient {
         return clone(result);
       }),
 
-    // --- Checklist --------------------------------------------------------------
+    // Checklist
     listChecklists: () =>
       withDb((db) => {
         requireRole(db, "rocan");
@@ -1341,7 +1343,7 @@ export function createMockClient(options: MockOptions = {}): ApiClient {
         return clone(version);
       }),
 
-    // --- Dokumen acuan ----------------------------------------------------------
+    // Dokumen acuan
     listReferenceDocuments: (f = {}) =>
       withDb((db) => {
         requireRole(db, "rocan");
@@ -1380,7 +1382,15 @@ export function createMockClient(options: MockOptions = {}): ApiClient {
           timeline_start: t,
         };
         db.documents.unshift(docRow);
+        referenceFiles.set(docRow.id, input.file);
         return publicDoc(docRow);
+      }),
+    getReferenceDocumentFile: (id) =>
+      withDb((db) => {
+        requireRole(db, "rocan");
+        const d = db.documents.find((x) => x.id === id) ?? fail("NOT_FOUND", "Dokumen acuan tidak ditemukan.");
+        if (!d.filename.toLowerCase().endsWith(".pdf")) fail("UNAVAILABLE", "Pratinjau hanya untuk berkas PDF.");
+        return referenceFiles.get(id) ?? new Blob([SAMPLE_PDF], { type: "application/pdf" });
       }),
     reingestReferenceDocument: (id) =>
       withDb((db) => {
@@ -1409,7 +1419,7 @@ export function createMockClient(options: MockOptions = {}): ApiClient {
         return publicDoc(d);
       }),
 
-    // --- Tabel acuan ----------------------------------------------------------------
+    // Tabel acuan
     startTableExtraction: (input) =>
       withDb((db) => {
         requireRole(db, "rocan");
@@ -1529,7 +1539,7 @@ export function createMockClient(options: MockOptions = {}): ApiClient {
         return publicTable(table);
       }),
 
-    // --- Kurasi -------------------------------------------------------------------
+    // Kurasi
     listCurationSamples: (f = {}) =>
       withDb((db) => {
         requireRole(db, "rocan");
@@ -1593,7 +1603,7 @@ export function createMockClient(options: MockOptions = {}): ApiClient {
         return new Blob([lines.join("\n")], { type: "application/x-ndjson" });
       }),
 
-    // --- Notifikasi ---------------------------------------------------------------
+    // Notifikasi
     listNotifications: () =>
       withDb((db) => {
         const user = me(db);

@@ -12,7 +12,6 @@ import type { ReviewRequestStatus } from "../../types";
 /** Satu status wakil per label yang dilihat Satker. */
 const summaryStatuses: ReviewRequestStatus[] = ["menunggu_review", "dalam_proses", "siap_diverifikasi", "selesai_revisi", "selesai_disetujui"];
 
-/** Beranda Satker: pengajuan miliknya dan statusnya (PRD FR-UI-01). */
 export function SatkerHomePage() {
   const { data, isPending, error, refetch } = useReviewRequests();
   const recent = (data ?? []).slice(0, 5);

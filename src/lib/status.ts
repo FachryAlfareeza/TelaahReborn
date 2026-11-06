@@ -20,11 +20,8 @@ export const REQUEST_STATUSES: ReviewRequestStatus[] = [
 ];
 
 /**
- * Satu-satunya pemetaan status pengajuan ke label per peran. Dipakai semua komponen.
- *
- * Bagi Satker, `siap_diverifikasi` berarti "sedang diperiksa ROCAN" (hasil AI belum boleh dilihat,
- * PRD FR-VER-03), dan `gagal` tidak ditampilkan sebagai kegagalan: Satker tidak dilibatkan saat
- * review gagal (kontrak §4.3), dan kegagalan teknis tidak boleh tampil sebagai kesimpulan reviu.
+ * Label per peran. Bagi Satker, `siap_diverifikasi` tampil sebagai sedang diperiksa (hasil AI belum
+ * boleh dilihat, PRD FR-VER-03) dan `gagal` tidak tampil sebagai kegagalan (kontrak §4.3).
  */
 export function getStatusView(status: ReviewRequestStatus, role: Role): StatusView {
   const isSatker = role === "satker";
@@ -52,7 +49,6 @@ export function getStatusLabel(status: ReviewRequestStatus, role: Role): string 
   return getStatusView(status, role).label;
 }
 
-/** Status yang ditampilkan sebagai pilihan saring untuk peran ini (label unik). */
 export function statusOptions(role: Role): { label: string; statuses: ReviewRequestStatus[] }[] {
   const groups = new Map<string, ReviewRequestStatus[]>();
   for (const s of REQUEST_STATUSES) {
@@ -65,8 +61,8 @@ export function statusOptions(role: Role): { label: string; statuses: ReviewRequ
 /** Jalankan ulang hanya untuk ROCAN, dari status gagal (PRD K-25). */
 export const canRetryReview = (status: ReviewRequestStatus, role: Role) => role === "rocan" && status === "gagal";
 
-/** Review masih berjalan: halaman detail memperbarui progres secara berkala. */
 export const isRunning = (status: ReviewRequestStatus) => status === "menunggu_review" || status === "dalam_proses";
 
-/** Status akhir dari ROCAN. */
 export const isFinal = (status: ReviewRequestStatus) => status === "selesai_revisi" || status === "selesai_disetujui";
+
+export const hasReviewResult = (status: ReviewRequestStatus) => status === "siap_diverifikasi" || isFinal(status);

@@ -5,10 +5,7 @@ import { DataSourceIndicator } from "../../components/DataSourceIndicator";
 import { DemoRoleButtons } from "./DemoRoleButtons";
 import { useAuth } from "./authState";
 
-/**
- * Masuk dengan NIP dan kata sandi (PRD FR-AUTH-01). Tidak ada pendaftaran mandiri:
- * akun dibuat Super Admin (PRD §7.2).
- */
+/** Tidak ada pendaftaran mandiri: akun dibuat Super Admin (PRD §7.2). */
 export function LoginPage() {
   const { user, loading, login } = useAuth();
   const [error, setError] = useState<string | null>(null);

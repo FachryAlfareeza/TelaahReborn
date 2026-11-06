@@ -14,7 +14,6 @@ type Props = {
   hint?: string;
 };
 
-/** Unggah satu berkas lewat klik atau seret. Bawaannya memeriksa PDF (ekstensi, MIME, signature, ukuran). */
 export function UploadDropzone({
   label,
   file,

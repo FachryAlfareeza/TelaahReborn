@@ -18,10 +18,7 @@ function duration(stage: Stage, now: number): string | null {
   return seconds < 60 ? `${seconds} detik` : `${Math.floor(seconds / 60)} menit ${seconds % 60} detik`;
 }
 
-/**
- * Progres per tahap. Tanpa persentase atau perkiraan waktu (PRD FR-PIPE-05): yang tampil hanya
- * tahap aktif, tahap selesai, dan durasi berjalan.
- */
+/** Tanpa persentase atau perkiraan waktu (PRD FR-PIPE-05). */
 export function ProgressPanel({ progress, showMessages = true }: { progress: Progress; showMessages?: boolean }) {
   // Durasi tahap yang masih berjalan dihitung sampai waktu pembaruan terakhir dari server.
   const now = Date.parse(progress.updated_at);

@@ -18,10 +18,7 @@ export type VerdictView = {
   icon: "CircleCheck" | "CircleX" | "TriangleAlert";
 };
 
-/**
- * Tiga status hasil per item, apa adanya dari PRD §13.2. Tidak ada status lain.
- * "Terjadi Kesalahan pada proses" adalah kegagalan teknis, bukan kesimpulan reviu.
- */
+/** "Terjadi Kesalahan pada proses" adalah kegagalan teknis, bukan kesimpulan reviu (PRD §13.2). */
 const views: Record<ItemStatus, VerdictView> = {
   Sesuai: { label: "Sesuai", tone: "success", icon: "CircleCheck" },
   "Tidak Sesuai atau perlu revisi": { label: "Tidak Sesuai atau perlu revisi", tone: "error", icon: "CircleX" },
@@ -45,7 +42,15 @@ export const decisionLabel: Record<Decision, string> = {
   selesai_disetujui: "Disetujui",
 };
 
-/** Bagian tampilan hasil (PRD FR-VER-02): format, substansi, tabel acuan, Screening 2. */
+/** Urutan bagian hasil (PRD FR-VER-02): format, substansi, kesesuaian TOR-RAB, tabel acuan, Screening 2. */
+export const INSPECTION_ORDER: InspectionType[] = [
+  "format_completeness",
+  "substance",
+  "tor_rab_alignment",
+  "reference_table",
+  "categorization",
+];
+
 export const inspectionTypeLabel: Record<InspectionType, string> = {
   format_completeness: "Format dan kelengkapan",
   substance: "Substansi",

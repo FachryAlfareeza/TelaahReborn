@@ -1,6 +1,5 @@
 import { CircleCheck, CircleMinus } from "lucide-react";
 
-/** Status aktif dengan ikon dan teks, tidak hanya warna. */
 export function ActiveLabel({ active }: { active: boolean }) {
   const Icon = active ? CircleCheck : CircleMinus;
   return (

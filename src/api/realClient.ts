@@ -265,6 +265,9 @@ export function createRealClient(
       request(`/reference-documents/${enc(id)}/deactivate`, s.referenceDocumentSchema, { method: "POST" }),
     activateReferenceDocument: (id) =>
       request(`/reference-documents/${enc(id)}/activate`, s.referenceDocumentSchema, { method: "POST" }),
+    // Kontrak v2.1 belum punya endpoint berkas dokumen acuan; jangan menebak path.
+    getReferenceDocumentFile: () =>
+      Promise.reject(new ApiError("UNAVAILABLE", "Pratinjau dokumen acuan belum tersedia di server.")),
 
     startTableExtraction: (input) =>
       request("/reference-tables/extractions", s.tableExtractionSchema, post(form(input))),

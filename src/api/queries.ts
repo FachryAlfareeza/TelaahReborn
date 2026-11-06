@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient, type QueryKey } from "@tanstack/react-query";
 import { useAuth } from "../features/auth/authState";
 import { isRunning } from "../lib/status";
@@ -19,11 +20,10 @@ import type {
   UpdateUserInput,
   UploadReferenceDocumentInput,
 } from "./client";
-import type { ReferenceTableType, Role } from "../types";
+import type { DocumentKind, ReferenceTableType, Role } from "../types";
 
 /** Jeda polling progres saat halaman detail terbuka (PRD FR-PRG-01, usulan 5 detik). */
 export const POLL_MS = 5000;
-/** Jeda pembaruan jumlah notifikasi belum dibaca. */
 export const NOTIFICATION_POLL_MS = 30_000;
 
 function useClient() {
@@ -35,7 +35,19 @@ function useInvalidate() {
   return (...keys: QueryKey[]) => Promise.all(keys.map((queryKey) => qc.invalidateQueries({ queryKey })));
 }
 
-// --- Pengajuan ---------------------------------------------------------------
+/** Berkas untuk pratinjau dan unduh, di-cache sekali per sesi. */
+export function useFileFetcher() {
+  const client = useClient();
+  const qc = useQueryClient();
+  return useMemo(() => {
+    const cached = (queryKey: QueryKey, queryFn: () => Promise<Blob>) =>
+      qc.fetchQuery({ queryKey, queryFn, staleTime: Infinity, gcTime: 5 * 60_000 });
+    return {
+      document: (id: string, kind: DocumentKind) => cached(["file", "document", id, kind], () => client.getDocument(id, kind)),
+      referenceDocument: (id: string) => cached(["file", "reference", id], () => client.getReferenceDocumentFile(id)),
+    };
+  }, [client, qc]);
+}
 
 export function useReviewRequests(filters: ReviewRequestFilters = {}) {
   const client = useClient();
@@ -106,8 +118,6 @@ export function useRetryReview(id: string) {
   });
 }
 
-// --- Hasil ---------------------------------------------------------------------
-
 export function useReviewResult(id: string, enabled: boolean) {
   const client = useClient();
   return useQuery({ queryKey: ["result", id, "rocan"], queryFn: () => client.getReviewResult(id), enabled });
@@ -140,8 +150,6 @@ export function useFinalize(id: string) {
     onSuccess: () => invalidate(["result", id], ["review-request", id], ["review-requests"], ["curation"]),
   });
 }
-
-// --- Master RO -------------------------------------------------------------------
 
 export function useFiscalYears() {
   const client = useClient();
@@ -223,8 +231,6 @@ export function useActivateDataset() {
   });
 }
 
-// --- Checklist -----------------------------------------------------------------
-
 export function useChecklists() {
   const client = useClient();
   return useQuery({ queryKey: ["checklists"], queryFn: () => client.listChecklists() });
@@ -262,8 +268,6 @@ export function useActivateChecklist() {
   });
 }
 
-// --- Dokumen acuan ----------------------------------------------------------------
-
 export function useReferenceDocuments(filters: ReferenceDocumentFilters = {}) {
   const client = useClient();
   return useQuery({
@@ -293,8 +297,6 @@ export function useSetReferenceDocumentActive() {
     v.active ? client.activateReferenceDocument(v.id) : client.deactivateReferenceDocument(v.id),
   );
 }
-
-// --- Tabel acuan -------------------------------------------------------------------
 
 export function useReferenceTables(filters: { table_type?: ReferenceTableType; fiscal_year?: number } = {}) {
   const client = useClient();
@@ -344,8 +346,6 @@ export function useActivateReferenceTable() {
   });
 }
 
-// --- Kurasi ---------------------------------------------------------------------
-
 export function useCurationSamples(filters: CurationFilters) {
   const client = useClient();
   return useQuery({ queryKey: ["curation", "samples", filters], queryFn: () => client.listCurationSamples(filters) });
@@ -389,8 +389,6 @@ export function useCreateCurationExport() {
   });
 }
 
-// --- Akun --------------------------------------------------------------------------
-
 export function useUsers(role?: Role) {
   const client = useClient();
   return useQuery({ queryKey: ["users", role ?? "all"], queryFn: () => client.listUsers(role) });
@@ -422,8 +420,6 @@ export function useDeactivateUser() {
     onSuccess: () => invalidate(["users"]),
   });
 }
-
-// --- Notifikasi -------------------------------------------------------------------
 
 export function useUnreadCount() {
   const client = useClient();

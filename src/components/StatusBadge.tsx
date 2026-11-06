@@ -5,7 +5,6 @@ import { toneIcon } from "./tone";
 
 const icons = { Clock, Loader, ClipboardCheck, CircleCheck, RotateCcw, TriangleAlert };
 
-/** Status pengajuan dengan teks + ikon berwarna. Label mengikuti peran. */
 export function StatusBadge({ status, role }: { status: ReviewRequestStatus; role: Role }) {
   const view = getStatusView(status, role);
   const Icon = icons[view.icon];

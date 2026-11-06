@@ -15,10 +15,7 @@ type Props = {
 
 const choices: Decision[] = ["selesai_disetujui", "selesai_revisi"];
 
-/**
- * Keputusan ROCAN: setujui atau minta revisi, dengan kategori final dan catatan.
- * Terpisah dari hasil AI dan selalu meminta konfirmasi, karena hasil final langsung dikirim ke Satker.
- */
+/** Selalu meminta konfirmasi karena hasil final langsung dikirim ke Satker. */
 export function FinalizePanel({ result, ready, pending, errorMessage, onFinalize }: Props) {
   const ids = { category: useId(), note: useId() };
   const suggested = result.hasil_final.final_category ?? result.hasil_ai?.screening_2.recommended_category ?? "";

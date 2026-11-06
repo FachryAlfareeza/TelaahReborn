@@ -3,9 +3,7 @@ import type { CodeLabel, ReviewRequest } from "../types";
 
 const codeAndName = (v: CodeLabel) => `${v.code} - ${v.name}`;
 
-/**
- * Hierarki anggaran pengajuan: snapshot saat diajukan (PRD FR-REQ-02). Kode tetap string.
- */
+/** Snapshot hierarki saat diajukan (PRD FR-REQ-02). */
 export function ProgramContextPanel({ request }: { request: ReviewRequest }) {
   const rows: [string, string][] = [
     ["Tahun anggaran", String(request.fiscal_year)],

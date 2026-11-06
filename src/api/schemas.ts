@@ -22,7 +22,7 @@ const nullable = <T extends z.ZodType>(schema: T) => schema.nullable();
 /** Bidang yang boleh tidak dikirim server; dianggap null. */
 const optionalNull = <T extends z.ZodType>(schema: T) => schema.nullable().optional().transform((v) => v ?? null);
 
-// --- Kosakata (kontrak §2) ----------------------------------------------------
+// Kosakata (kontrak §2)
 
 export const roleSchema = z.enum(["super_admin", "rocan", "satker"]);
 
@@ -91,7 +91,7 @@ export const datasetIssueTypeSchema = z.enum([
   "unparseable_code",
 ]);
 
-// --- Autentikasi dan akun (§3.1, §3.2) ---------------------------------------
+// Autentikasi dan akun (§3.1, §3.2)
 
 export const codeLabelSchema = strictObject({ code, name: z.string() });
 
@@ -115,7 +115,7 @@ export const userSchema = strictObject({
   updated_at: time,
 });
 
-// --- Master RO (§3.3) ---------------------------------------------------------
+// Master RO (§3.3)
 
 export const fiscalYearSchema = strictObject({
   fiscal_year: z.number().int(),
@@ -162,7 +162,7 @@ export const datasetIssueSchema = strictObject({
   raw: z.record(z.string(), z.unknown()),
 });
 
-// --- Pengajuan (§3.4) ---------------------------------------------------------
+// Pengajuan (§3.4)
 
 export const storedDocumentSchema = strictObject({
   filename: z.string().min(1),
@@ -195,7 +195,7 @@ export const reviewRequestSchema = strictObject({
   updated_at: time,
 });
 
-// --- Pipeline dan progres (§3.5) ---------------------------------------------
+// Pipeline dan progres (§3.5)
 
 export const stageSchema = strictObject({
   stage: pipelineStageSchema,
@@ -222,7 +222,7 @@ export const retryReviewSchema = strictObject({
   started_at: time,
 });
 
-// --- Hasil review (§3.6) -----------------------------------------------------
+// Hasil review (§3.6)
 
 export const evidenceSchema = strictObject({
   source: z.enum(["tor", "rab", "reference_document", "reference_table"]),
@@ -318,7 +318,7 @@ export const historyEntrySchema = strictObject({
   changed_at: time,
 });
 
-// --- Checklist (§3.7) --------------------------------------------------------
+// Checklist (§3.7)
 
 export const checklistItemSchema = strictObject({
   item_id: optionalNull(id),
@@ -345,7 +345,7 @@ export const checklistVersionSchema = strictObject({
   created_at: time,
 });
 
-// --- Dokumen acuan (§3.8) ----------------------------------------------------
+// Dokumen acuan (§3.8)
 
 export const referenceDocumentSchema = strictObject({
   id,
@@ -364,7 +364,7 @@ export const referenceDocumentSchema = strictObject({
   processed_at: nullable(time),
 });
 
-// --- Tabel acuan BAS/SBM (§3.9) -----------------------------------------------
+// Tabel acuan BAS/SBM (§3.9)
 
 export const tableExtractionSchema = strictObject({
   extraction_id: id,
@@ -397,7 +397,7 @@ export const referenceTableRowSchema = strictObject({
   values: z.record(z.string(), z.union([z.string(), z.number(), z.null()])),
 });
 
-// --- Kurasi (§3.10) ----------------------------------------------------------
+// Kurasi (§3.10)
 
 export const curationSampleSchema = strictObject({
   id,
@@ -427,7 +427,7 @@ export const curationExportSchema = strictObject({
   created_at: optionalNull(time),
 });
 
-// --- Notifikasi (§3.11) ------------------------------------------------------
+// Notifikasi (§3.11)
 
 export const notificationSchema = strictObject({
   id,

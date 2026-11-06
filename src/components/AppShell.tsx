@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { Bell, LogOut, Menu, X } from "lucide-react";
 import { useUnreadCount } from "../api/queries";
 import { useAuth } from "../features/auth/authState";
@@ -13,11 +13,16 @@ const navClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? "bg-white font-medium text-brand-deep shadow-xs" : "text-ink hover:bg-sky-soft"
   }`;
 
-/** Kerangka aplikasi: navigasi menurut peran, notifikasi, nama pengguna, keluar. */
 export function AppShell() {
   const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const unread = useUnreadCount();
+  const mainRef = useRef<HTMLElement>(null);
+  const { pathname } = useLocation();
+  // Di layar besar <main> yang menggulir, bukan jendela; mulai dari atas setiap pindah halaman.
+  useEffect(() => {
+    mainRef.current?.scrollTo?.(0, 0);
+  }, [pathname]);
   if (!user) return null;
   const items = navForRole(user.role);
   const count = unread.data ?? 0;
@@ -82,11 +87,11 @@ export function AppShell() {
         </div>
       </aside>
 
-      <div className="min-w-0 flex-1">
-        <main className="mx-auto max-w-[1120px] px-4 py-6 lg:px-10 lg:py-8">
+      <div className="flex min-w-0 flex-1 flex-col lg:h-screen">
+        <main ref={mainRef} className="mx-auto w-full max-w-[1600px] px-4 py-5 lg:min-h-0 lg:flex-1 lg:overflow-auto lg:px-8">
           <Outlet />
         </main>
-        <div className="px-4 pb-6 lg:px-10">
+        <div className="px-4 py-2 lg:px-8">
           <DataSourceIndicator />
         </div>
       </div>

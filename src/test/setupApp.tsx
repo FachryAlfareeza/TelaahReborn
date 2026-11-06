@@ -18,14 +18,12 @@ export function memoryStorage() {
 
 export const nipOf = (role: Role) => seedUsers.find((u) => u.role === role)!.nip;
 
-/** Klien mock baru dengan penyimpanan di memori, opsional sudah masuk sebagai peran tertentu. */
 export async function mockClient(role?: Role, options: MockOptions = {}) {
   const client = createMockClient({ storage: memoryStorage(), ...options });
   if (role) await client.login({ nip: nipOf(role), password: DEMO_PASSWORD });
   return client;
 }
 
-/** Render seluruh aplikasi di alamat tertentu dengan klien mock. */
 export async function setupApp(path: string, role?: Role, options: MockOptions = {}) {
   const client = await mockClient(role, options);
   const utils = render(

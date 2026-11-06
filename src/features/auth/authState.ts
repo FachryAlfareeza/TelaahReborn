@@ -3,7 +3,6 @@ import type { ApiClient, LoginInput } from "../../api/client";
 import type { User } from "../../types";
 
 export type AuthValue = {
-  /** Klien API yang dipakai aplikasi. Layar mengambil data lewat sini. */
   client: ApiClient;
   user: User | null;
   loading: boolean;

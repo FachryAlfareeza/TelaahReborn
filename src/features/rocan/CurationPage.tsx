@@ -8,19 +8,20 @@ import {
 } from "../../api/queries";
 import { DataTable, type Column } from "../../components/DataTable";
 import { ErrorState } from "../../components/ErrorState";
-import { errorText, Feedback, Field } from "../../components/form";
+import { errorText, Feedback, Field, FilterSelect } from "../../components/form";
 import { LoadingState } from "../../components/LoadingState";
 import { ResultItemView } from "../../components/ResultItemView";
-import { Section } from "../../components/Section";
+import { DashboardPage, Panel, SplitPane, StatCard } from "../../components/Dashboard";
+import { Drawer } from "../../components/Drawer";
 import { VerdictBadge } from "../../components/VerdictBadge";
 import { useAuth } from "../auth/authState";
 import { formatDate } from "../../lib/date";
 import { saveBlob } from "../../lib/files";
 import { inspectionTypeLabel } from "../../lib/verdict";
 import type { CurationSample, CurationStatus, InspectionType } from "../../types";
+import { jobStatusLabel } from "./labels";
 
 const statusLabel: Record<CurationStatus, string> = { pending: "Belum ditinjau", approved: "Disetujui", rejected: "Ditolak" };
-const exportLabel = { pending: "Menunggu", processing: "Diproses", succeeded: "Selesai", failed: "Gagal" } as const;
 
 function SampleDetail({ id, onClose }: { id: string; onClose: () => void }) {
   const sample = useCurationSample(id);
@@ -133,7 +134,7 @@ function Exports() {
             <li key={x.export_id} className="flex flex-wrap items-center gap-x-6 gap-y-1 py-2">
               <span>{formatDate(x.created_at)}</span>
               <span>{x.sample_count} sampel</span>
-              <span>{exportLabel[x.status]}</span>
+              <span>{jobStatusLabel[x.status]}</span>
               {x.sha256 && <span className="text-xs break-all text-ink-soft">sha256 {x.sha256}</span>}
               {x.status === "succeeded" && (
                 <button type="button" className="link ml-auto" onClick={() => void download(x.export_id)}>
@@ -148,15 +149,12 @@ function Exports() {
   );
 }
 
-/**
- * Kurasi data SFT (PRD §8.16): sampel dibuat saat finalisasi; ROCAN menyetujui yang layak masuk
- * dataset, lalu mengekspor dataset berversi. Training tidak dilakukan di MVP.
- */
+/** Training tidak dilakukan di MVP (PRD §8.16); halaman ini hanya menyiapkan dataset. */
 export function CurationPage() {
   const [status, setStatus] = useState<CurationStatus | "">("pending");
   const [type, setType] = useState<InspectionType | "">("");
   const [open, setOpen] = useState<string | null>(null);
-  const ids = { status: useId(), type: useId() };
+  const [exporting, setExporting] = useState(false);
   const samples = useCurationSamples({ status: status || undefined, inspection_type: type || undefined });
 
   const columns: Column<CurationSample>[] = [
@@ -177,52 +175,60 @@ export function CurationPage() {
     },
   ];
 
+  const list = samples.data ?? [];
+
   return (
-    <div className="space-y-6">
-      <h1 className="page-title">Kurasi Data</h1>
-      <Section title="Sampel">
-        <div className="mb-3 flex flex-wrap gap-4">
-          <Field id={ids.status} label="Status">
-            <select id={ids.status} value={status} onChange={(e) => setStatus(e.target.value as CurationStatus | "")} className="field w-auto">
-              <option value="">Semua</option>
-              {Object.entries(statusLabel).map(([k, v]) => (
-                <option key={k} value={k}>
-                  {v}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field id={ids.type} label="Jenis pemeriksaan">
-            <select id={ids.type} value={type} onChange={(e) => setType(e.target.value as InspectionType | "")} className="field w-auto">
-              <option value="">Semua</option>
-              {Object.entries(inspectionTypeLabel).map(([k, v]) => (
-                <option key={k} value={k}>
-                  {v}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </div>
-        {samples.isPending && <LoadingState />}
-        {samples.error && <ErrorState message={samples.error.message} onRetry={() => void samples.refetch()} />}
-        {samples.data && (
-          <DataTable
-            caption="Sampel kurasi"
-            columns={columns}
-            rows={samples.data}
-            getRowKey={(s) => s.id}
-            emptyTitle="Belum ada sampel. Sampel dibuat saat ROCAN memfinalisasi pengajuan."
-          />
-        )}
-      </Section>
-      {open && (
-        <Section title="Tinjau sampel">
-          <SampleDetail key={open} id={open} onClose={() => setOpen(null)} />
-        </Section>
-      )}
-      <Section title="Ekspor dataset">
+    <DashboardPage
+      title="Kurasi Data"
+      actions={
+        <button type="button" className="btn btn-primary" onClick={() => setExporting(true)}>
+          Ekspor dataset
+        </button>
+      }
+      stats={
+        <>
+          <StatCard label="Sampel ditampilkan" value={list.length} />
+          <StatCard label="Belum ditinjau" value={list.filter((s) => s.status === "pending").length} />
+          <StatCard label="Disetujui" value={list.filter((s) => s.status === "approved").length} />
+          <StatCard label="Ditolak" value={list.filter((s) => s.status === "rejected").length} />
+          <StatCard label="Diubah ROCAN" value={list.filter((s) => s.changed_by_rocan).length} />
+        </>
+      }
+    >
+      <SplitPane side="480px">
+        <Panel title="Sampel" table>
+          {samples.isPending && <LoadingState />}
+          {samples.error && <ErrorState message={samples.error.message} onRetry={() => void samples.refetch()} />}
+          {samples.data && (
+            <DataTable
+              fill
+              caption="Sampel kurasi"
+              columns={columns}
+              rows={samples.data}
+              getRowKey={(s) => s.id}
+              onRowClick={(s) => setOpen(s.id)}
+              selectedKey={open}
+              emptyTitle="Belum ada sampel. Sampel dibuat saat ROCAN memfinalisasi pengajuan."
+              toolbar={
+                <>
+                  <FilterSelect label="Status" value={status} onChange={setStatus} allLabel="Semua status" options={statusLabel} />
+                  <FilterSelect label="Jenis pemeriksaan" value={type} onChange={setType} allLabel="Semua jenis" options={inspectionTypeLabel} />
+                </>
+              }
+            />
+          )}
+        </Panel>
+        <Panel title="Tinjau sampel">
+          {open ? (
+            <SampleDetail key={open} id={open} onClose={() => setOpen(null)} />
+          ) : (
+            <p className="text-sm text-ink-soft">Pilih sampel untuk meninjaunya.</p>
+          )}
+        </Panel>
+      </SplitPane>
+      <Drawer open={exporting} title="Ekspor dataset" onClose={() => setExporting(false)}>
         <Exports />
-      </Section>
-    </div>
+      </Drawer>
+    </DashboardPage>
   );
 }

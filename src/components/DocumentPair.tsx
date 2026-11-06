@@ -1,77 +1,78 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { FileText } from "lucide-react";
-import { useAuth } from "../features/auth/authState";
-import { formatFileSize, saveBlob } from "../lib/files";
+import { useFileFetcher } from "../api/queries";
+import { formatFileSize, saveBlob, toPdfFile } from "../lib/files";
 import type { DocumentKind, ReviewRequest } from "../types";
+import { errorText } from "./form";
 import { LoadingState } from "./LoadingState";
-
-// Pustaka PDF besar, jadi baru dimuat saat pratinjau dibuka.
-const PdfPreviewModal = lazy(() => import("./PdfPreviewModal").then((m) => ({ default: m.PdfPreviewModal })));
+import { PdfPreview } from "./PdfPreview";
 
 export type OpenDocument = { kind: DocumentKind; page?: number };
 
-type Props = {
-  request: ReviewRequest;
-  /** Dokumen yang sedang dibuka (dikendalikan dari luar agar bukti bisa membuka halaman tertentu). */
-  open: OpenDocument | null;
-  onOpenChange: (open: OpenDocument | null) => void;
-};
-
 const label: Record<DocumentKind, string> = { tor: "TOR", rab: "RAB" };
 
-/**
- * TOR dan RAB berdampingan. Berkas diambil lewat endpoint unduh yang memeriksa hak akses
- * (kontrak §1: path storage tidak pernah dikirim ke client).
- */
-export function DocumentPair({ request, open, onOpenChange }: Props) {
-  const { client } = useAuth();
-  const [files, setFiles] = useState<Partial<Record<DocumentKind, File>>>({});
+type PreviewProps = {
+  request: ReviewRequest;
+  open: OpenDocument | null;
+  onClose: () => void;
+};
+
+/** Terpisah dari daftar berkas agar tombol bukti bisa membukanya dari tab mana pun. */
+export function DocumentPreview({ request, open, onClose }: PreviewProps) {
+  const fetchFile = useFileFetcher();
+  // Hasil terakhir per jenis dokumen; hasil untuk dokumen lain diabaikan sampai unduhan baru selesai.
+  const [loaded, setLoaded] = useState<{ kind: DocumentKind; file?: File; error?: string } | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    const { kind } = open;
+    fetchFile
+      .document(request.id, kind)
+      .then((blob) => !cancelled && setLoaded({ kind, file: toPdfFile(blob, request.documents[kind].filename) }))
+      .catch((e: unknown) => !cancelled && setLoaded({ kind, error: errorText(e) }));
+    return () => {
+      cancelled = true;
+    };
+  }, [open, request, fetchFile]);
+
+  if (!open) return null;
+  if (loaded?.kind !== open.kind) return <LoadingState label="Memuat berkas..." />;
+  if (!loaded.file) {
+    return (
+      <p role="alert" className="error-text">
+        {loaded.error}
+      </p>
+    );
+  }
+  return <PdfPreview title={`${label[open.kind]}: ${loaded.file.name}`} file={loaded.file} initialPage={open.page} onClose={onClose} />;
+}
+
+type Props = {
+  request: ReviewRequest;
+  open: OpenDocument | null;
+  onOpenChange: (open: OpenDocument | null) => void;
+  /** Matikan bila halaman merender DocumentPreview sendiri. */
+  withPreview?: boolean;
+};
+
+/** Berkas lewat endpoint unduh berhak akses; path storage tidak pernah dikirim (kontrak §1). */
+export function DocumentPair({ request, open, onOpenChange, withPreview = true }: Props) {
+  const fetchFile = useFileFetcher();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<DocumentKind | null>(null);
 
-  async function load(kind: DocumentKind): Promise<File | null> {
-    const cached = files[kind];
-    if (cached) return cached;
+  async function download(kind: DocumentKind) {
     setBusy(kind);
     setError(null);
     try {
-      const blob = await client.getDocument(request.id, kind);
-      const file = new File([blob], request.documents[kind].filename, { type: "application/pdf" });
-      setFiles((f) => ({ ...f, [kind]: file }));
-      return file;
+      saveBlob(await fetchFile.document(request.id, kind), request.documents[kind].filename);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Berkas tidak dapat diambil.");
-      return null;
+      setError(errorText(e));
     } finally {
       setBusy(null);
     }
   }
-
-  // Dokumen bisa dibuka dari luar (mis. tombol bukti); ambil berkasnya bila belum ada.
-  useEffect(() => {
-    if (!open || files[open.kind]) return;
-    let cancelled = false;
-    client
-      .getDocument(request.id, open.kind)
-      .then((blob) => {
-        if (cancelled) return;
-        const file = new File([blob], request.documents[open.kind].filename, { type: "application/pdf" });
-        setFiles((f) => ({ ...f, [open.kind]: file }));
-      })
-      .catch((e: unknown) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Berkas tidak dapat diambil.");
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [open, files, client, request]);
-
-  async function download(kind: DocumentKind) {
-    const file = await load(kind);
-    if (file) saveBlob(file, file.name);
-  }
-
-  const openFile = open ? files[open.kind] : undefined;
 
   return (
     <div>
@@ -88,15 +89,12 @@ export function DocumentPair({ request, open, onOpenChange }: Props) {
                   <span>{formatFileSize(doc.size_bytes)}</span>
                   <button
                     type="button"
-                    onClick={() => {
-                      setError(null);
-                      onOpenChange({ kind });
-                    }}
+                    onClick={() => onOpenChange({ kind })}
                     disabled={busy !== null}
                     aria-label={`Lihat pratinjau ${label[kind]}`}
                     className="link"
                   >
-                    {open?.kind === kind && !openFile ? "Memuat..." : "Pratinjau"}
+                    Pratinjau
                   </button>
                   <button
                     type="button"
@@ -118,17 +116,7 @@ export function DocumentPair({ request, open, onOpenChange }: Props) {
           {error}
         </p>
       )}
-      {open && openFile && (
-        <Suspense fallback={<LoadingState label="Memuat pratinjau..." />}>
-          <PdfPreviewModal
-            open
-            title={`${label[open.kind]}: ${openFile.name}`}
-            file={openFile}
-            initialPage={open.page}
-            onClose={() => onOpenChange(null)}
-          />
-        </Suspense>
-      )}
+      {withPreview && <DocumentPreview request={request} open={open} onClose={() => onOpenChange(null)} />}
     </div>
   );
 }

@@ -10,7 +10,6 @@ import { formatDate } from "../../lib/date";
 import { getStatusLabel, REQUEST_STATUSES } from "../../lib/status";
 import type { ReviewRequest, ReviewRequestStatus } from "../../types";
 
-/** Antrean ROCAN (PRD FR-UI-01): siap diverifikasi dan gagal butuh tindakan; lainnya dipantau. */
 const QUEUES: { status: ReviewRequestStatus; empty: string }[] = [
   { status: "siap_diverifikasi", empty: "Tidak ada pengajuan yang menunggu verifikasi." },
   { status: "gagal", empty: "Tidak ada review yang gagal." },

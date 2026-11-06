@@ -11,7 +11,6 @@ type Props = {
   onOpenEvidence?: (evidence: Evidence) => void;
 };
 
-/** Screening 2: klaim kategori Satker, rekomendasi sistem, dan status kesesuaiannya. */
 export function Screening2View({ result, priority, onOpenEvidence }: Props) {
   return (
     <div className="space-y-3">

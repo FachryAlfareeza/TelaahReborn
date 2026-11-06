@@ -8,10 +8,7 @@ export const roleLabel: Record<Role, string> = {
   super_admin: "Super Admin",
 };
 
-/**
- * Pembagian peran mengikuti PRD §5: ROCAN memverifikasi dan mengelola checklist, dokumen acuan,
- * tabel acuan, Master RO, dan kurasi. Super Admin hanya mengelola akun.
- */
+/** Pembagian peran mengikuti PRD §5. */
 export const homePath: Record<Role, string> = {
   satker: "/satker",
   rocan: "/rocan",
@@ -29,8 +26,7 @@ const rocanNav: NavItem[] = [
   { to: "/rocan", label: "Beranda", end: true },
   { to: "/rocan/pengajuan", label: "Daftar Pengajuan" },
   { to: "/rocan/checklist", label: "Checklist" },
-  { to: "/rocan/acuan", label: "Dokumen Acuan" },
-  { to: "/rocan/tabel-acuan", label: "Tabel Acuan" },
+  { to: "/rocan/acuan", label: "Acuan" },
   { to: "/rocan/master-ro", label: "Master RO" },
   { to: "/rocan/kurasi", label: "Kurasi Data" },
 ];

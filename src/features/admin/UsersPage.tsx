@@ -5,7 +5,8 @@ import { DataTable, type Column } from "../../components/DataTable";
 import { ErrorState } from "../../components/ErrorState";
 import { ActiveLabel, errorText, Feedback, Field } from "../../components/form";
 import { LoadingState } from "../../components/LoadingState";
-import { Section } from "../../components/Section";
+import { DashboardPage, Panel, StatCard } from "../../components/Dashboard";
+import { Drawer } from "../../components/Drawer";
 import { displayValue } from "../../lib/empty";
 import { roleLabel } from "../../lib/roles";
 import type { Role, UnitPair, User } from "../../types";
@@ -154,10 +155,8 @@ function UserForm({ user, onDone }: { user: User | null; onDone: () => void }) {
   );
 }
 
-/** Pengelolaan akun oleh Super Admin (PRD §8.2): buat, ubah, nonaktifkan; unit Satker dari Master RO. */
 export function UsersPage() {
   const [role, setRole] = useState<Role | "">("");
-  const roleId = useId();
   const users = useUsers(role || undefined);
   const deactivate = useDeactivateUser();
   const [editing, setEditing] = useState<User | "new" | null>(null);
@@ -189,44 +188,55 @@ export function UsersPage() {
     },
   ];
 
+  const all = users.data ?? [];
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="page-title">Akun Pengguna</h1>
-        {editing === null && (
-          <button type="button" className="btn btn-primary" onClick={() => setEditing("new")}>
-            Tambah akun
-          </button>
-        )}
-      </div>
-      {editing !== null && (
-        <Section title={editing === "new" ? "Akun baru" : `Ubah akun ${editing.nama}`}>
-          <UserForm
-            key={editing === "new" ? "new" : editing.id}
-            user={editing === "new" ? null : editing}
-            onDone={() => setEditing(null)}
-          />
-        </Section>
-      )}
-      <Section title="Daftar akun">
-        <div className="mb-3">
-          <label htmlFor={roleId} className="field-label">
-            Peran
-          </label>
-          <select id={roleId} value={role} onChange={(e) => setRole(e.target.value as Role | "")} className="field w-auto">
-            <option value="">Semua peran</option>
-            {ROLES.map((r) => (
-              <option key={r} value={r}>
-                {roleLabel[r]}
-              </option>
-            ))}
-          </select>
-        </div>
-        <Feedback notice={notice} error={deactivate.error?.message ?? null} />
+    <DashboardPage
+      title="Akun Pengguna"
+      actions={
+        <button type="button" className="btn btn-primary" onClick={() => setEditing("new")}>
+          Tambah akun
+        </button>
+      }
+      stats={
+        <>
+          <StatCard label="Akun ditampilkan" value={all.length} />
+          {ROLES.map((r) => (
+            <StatCard
+              key={r}
+              label={roleLabel[r]}
+              value={role && role !== r ? "—" : all.filter((u) => u.role === r).length}
+              onClick={() => setRole(role === r ? "" : r)}
+              active={role === r}
+            />
+          ))}
+          <StatCard label="Nonaktif" value={all.filter((u) => !u.is_active).length} />
+        </>
+      }
+    >
+      <Feedback notice={notice} error={deactivate.error?.message ?? null} />
+      <Panel title="Daftar akun" table className="lg:flex-1">
         {users.isPending && <LoadingState />}
         {users.error && <ErrorState message={users.error.message} onRetry={() => void users.refetch()} />}
-        {users.data && <DataTable caption="Akun pengguna" columns={columns} rows={users.data} getRowKey={(u) => u.id} />}
-      </Section>
+        {users.data && (
+          <DataTable
+            fill
+            caption="Akun pengguna"
+            columns={columns}
+            rows={users.data}
+            getRowKey={(u) => u.id}
+          />
+        )}
+      </Panel>
+      <Drawer
+        open={editing !== null}
+        title={editing === null || editing === "new" ? "Akun baru" : `Ubah akun ${editing.nama}`}
+        onClose={() => setEditing(null)}
+      >
+        {editing !== null && (
+          <UserForm key={editing === "new" ? "new" : editing.id} user={editing === "new" ? null : editing} onDone={() => setEditing(null)} />
+        )}
+      </Drawer>
       <ConfirmDialog
         open={confirm !== null}
         title={`Nonaktifkan akun ${confirm?.nama ?? ""}?`}
@@ -242,6 +252,6 @@ export function UsersPage() {
       >
         Semua sesi akun ini akan dicabut. Akun dapat diaktifkan kembali lewat Ubah.
       </ConfirmDialog>
-    </div>
+    </DashboardPage>
   );
 }

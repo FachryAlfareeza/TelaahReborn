@@ -14,11 +14,7 @@ async function readHead(file: Blob, bytes: number): Promise<string> {
   });
 }
 
-/**
- * Validasi PDF sesuai PRD §7.3 butir 8: ekstensi `.pdf`, MIME `application/pdf`, signature `%PDF-`,
- * tidak kosong, dan ukuran maksimum. Server tetap memvalidasi ulang.
- * Mengembalikan pesan galat, atau null bila berkas boleh dipakai.
- */
+/** PRD §7.3 butir 8; server tetap memvalidasi ulang. Mengembalikan pesan galat atau null. */
 export async function validatePdf(file: File, maxSizeMb = MAX_FILE_MB): Promise<string | null> {
   if (!file.name.toLowerCase().endsWith(".pdf")) return "Berkas harus berekstensi .pdf.";
   if (file.type !== "application/pdf") return "Berkas harus bertipe PDF.";
@@ -28,13 +24,11 @@ export async function validatePdf(file: File, maxSizeMb = MAX_FILE_MB): Promise<
   return null;
 }
 
-/** Ukuran berkas dalam KB atau MB, format Indonesia. */
 export function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
   return `${(bytes / (1024 * 1024)).toLocaleString("id-ID", { maximumFractionDigits: 1 })} MB`;
 }
 
-/** Simpan Blob sebagai berkas di perangkat pengguna. */
 export function saveBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -45,3 +39,13 @@ export function saveBlob(blob: Blob, filename: string): void {
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+/** Mengembalikan pesan galat atau null. */
+export async function validateExtension(file: File, extensions: string[]): Promise<string | null> {
+  const name = file.name.toLowerCase();
+  if (!extensions.some((ext) => name.endsWith(ext))) return `Berkas harus ${extensions.join(" atau ")}.`;
+  if (file.size === 0) return "Berkas kosong. Pilih berkas lain.";
+  return null;
+}
+
+export const toPdfFile = (blob: Blob, filename: string) => new File([blob], filename, { type: "application/pdf" });

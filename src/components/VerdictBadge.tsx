@@ -5,7 +5,6 @@ import { toneIcon } from "./tone";
 
 const icons = { CircleCheck, CircleX, TriangleAlert };
 
-/** Status hasil per item (Sesuai / Tidak Sesuai atau perlu revisi / Terjadi Kesalahan pada proses). */
 export function VerdictBadge({ status }: { status: ItemStatus }) {
   const view = getVerdictView(status);
   const Icon = icons[view.icon];

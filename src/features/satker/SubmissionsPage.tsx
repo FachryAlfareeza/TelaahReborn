@@ -1,6 +1,7 @@
-import { useId, useMemo, useState } from "react";
+import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useReviewRequests } from "../../api/queries";
+import { DashboardPage, Panel, StatCard } from "../../components/Dashboard";
 import { DataTable, type Column } from "../../components/DataTable";
 import { ErrorState } from "../../components/ErrorState";
 import { LoadingState } from "../../components/LoadingState";
@@ -14,13 +15,10 @@ export function SubmissionsPage() {
   const { data, isPending, error, refetch } = useReviewRequests();
   const [params] = useSearchParams();
   const [filter, setFilter] = useState(params.get("status") ?? "");
-  const filterId = useId();
   const options = statusOptions("satker");
 
-  const rows = useMemo(
-    () => (data ?? []).filter((r) => !filter || getStatusLabel(r.status, "satker") === filter),
-    [data, filter],
-  );
+  const all = data ?? [];
+  const rows = all.filter((r) => !filter || getStatusLabel(r.status, "satker") === filter);
 
   const columns: Column<ReviewRequest>[] = [
     { key: "title", header: "Judul usulan", render: (r) => r.title, sortValue: (r) => r.title },
@@ -51,33 +49,42 @@ export function SubmissionsPage() {
   ];
 
   return (
-    <div className="space-y-4">
-      <h1 className="page-title">Pengajuan Saya</h1>
-      <div>
-        <label htmlFor={filterId} className="field-label">
-          Tampilkan status
-        </label>
-        <select id={filterId} value={filter} onChange={(e) => setFilter(e.target.value)} className="field w-auto">
-          <option value="">Semua status</option>
+    <DashboardPage
+      title="Pengajuan Saya"
+      actions={
+        <Link to="/satker/ajukan" className="btn btn-primary">
+          Ajukan baru
+        </Link>
+      }
+      stats={
+        <>
+          <StatCard label="Semua pengajuan" value={all.length} onClick={() => setFilter("")} active={filter === ""} />
           {options.map((o) => (
-            <option key={o.label} value={o.label}>
-              {o.label}
-            </option>
+            <StatCard
+              key={o.label}
+              label={o.label}
+              value={all.filter((r) => getStatusLabel(r.status, "satker") === o.label).length}
+              onClick={() => setFilter(filter === o.label ? "" : o.label)}
+              active={filter === o.label}
+            />
           ))}
-        </select>
-      </div>
-
-      {isPending && <LoadingState label="Memuat daftar pengajuan..." />}
-      {error && <ErrorState message={error.message} onRetry={() => void refetch()} />}
-      {data && (
-        <DataTable
-          caption="Daftar pengajuan"
-          columns={columns}
-          rows={rows}
-          getRowKey={(r) => r.id}
-          emptyTitle={filter ? `Belum ada pengajuan berstatus ${filter}` : "Belum ada pengajuan"}
-        />
-      )}
-    </div>
+        </>
+      }
+    >
+      <Panel title="Daftar pengajuan" table className="lg:flex-1">
+        {isPending && <LoadingState label="Memuat daftar pengajuan..." />}
+        {error && <ErrorState message={error.message} onRetry={() => void refetch()} />}
+        {data && (
+          <DataTable
+            fill
+            caption="Daftar pengajuan"
+            columns={columns}
+            rows={rows}
+            getRowKey={(r) => r.id}
+            emptyTitle={filter ? `Belum ada pengajuan berstatus ${filter}` : "Belum ada pengajuan"}
+          />
+        )}
+      </Panel>
+    </DashboardPage>
   );
 }

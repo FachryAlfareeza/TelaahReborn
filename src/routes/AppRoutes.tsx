@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "../components/AppShell";
 import { UsersPage } from "../features/admin/UsersPage";
 import { LoginPage } from "../features/auth/LoginPage";
@@ -6,8 +6,7 @@ import { NotificationsPage } from "../features/notifications/NotificationsPage";
 import { ChecklistPage } from "../features/rocan/ChecklistPage";
 import { CurationPage } from "../features/rocan/CurationPage";
 import { MasterRoPage } from "../features/rocan/MasterRoPage";
-import { ReferenceDocumentsPage } from "../features/rocan/ReferenceDocumentsPage";
-import { ReferenceTablesPage } from "../features/rocan/ReferenceTablesPage";
+import { ReferencePage } from "../features/rocan/ReferencePage";
 import { RocanHomePage } from "../features/rocan/RocanHomePage";
 import { RocanReviewPage } from "../features/rocan/RocanReviewPage";
 import { RocanSubmissionsPage } from "../features/rocan/RocanSubmissionsPage";
@@ -18,10 +17,7 @@ import { SubmitPage } from "../features/satker/SubmitPage";
 import { HomeRedirect, RequireAuth, RequireRole } from "./guards";
 import { ForbiddenPage, NotFoundPage } from "./pages";
 
-/**
- * Rute per peran (PRD §5, FR-UI-02). Backend tetap memeriksa peran dan kepemilikan;
- * penjaga rute ini hanya untuk tampilan.
- */
+/** Penjaga rute hanya untuk tampilan; backend tetap memeriksa peran dan kepemilikan. */
 export function AppRoutes() {
   return (
     <Routes>
@@ -43,8 +39,9 @@ export function AppRoutes() {
             <Route path="/rocan/pengajuan" element={<RocanSubmissionsPage />} />
             <Route path="/rocan/pengajuan/:id" element={<RocanReviewPage />} />
             <Route path="/rocan/checklist" element={<ChecklistPage />} />
-            <Route path="/rocan/acuan" element={<ReferenceDocumentsPage />} />
-            <Route path="/rocan/tabel-acuan" element={<ReferenceTablesPage />} />
+            <Route path="/rocan/acuan" element={<ReferencePage />} />
+            {/* Tabel acuan digabung ke halaman Acuan. */}
+            <Route path="/rocan/tabel-acuan" element={<Navigate to="/rocan/acuan" replace />} />
             <Route path="/rocan/master-ro" element={<MasterRoPage />} />
             <Route path="/rocan/kurasi" element={<CurationPage />} />
           </Route>

@@ -19,10 +19,7 @@ const dateTimeFormat = new Intl.DateTimeFormat("id-ID", {
   timeZone: "Asia/Jakarta",
 });
 
-/**
- * Satu-satunya tempat menampilkan tanggal. Menerima teks ISO 8601.
- * "2025-03-05" menjadi "5 Maret 2025". Dengan jam, ditampilkan dalam WIB.
- */
+/** Menerima teks ISO 8601. Dengan jam, ditampilkan dalam WIB. */
 export function formatDate(iso: string | null | undefined): string {
   if (!iso) return EMPTY_VALUE;
   const date = new Date(iso);

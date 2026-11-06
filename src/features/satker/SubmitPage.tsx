@@ -9,7 +9,6 @@ import { CATEGORIES, categoryLabel } from "../../lib/verdict";
 import type { Category, CodeLabel } from "../../types";
 import { useAuth } from "../auth/authState";
 
-/** Pratinjau PDF dari berkas yang dipilih, dibuka bila diminta. */
 function LocalPreview({ file, label }: { file: File; label: string }) {
   const url = useMemo(() => URL.createObjectURL(file), [file]);
   useEffect(() => () => URL.revokeObjectURL(url), [url]);
@@ -63,10 +62,7 @@ function ReadOnly({ label, value }: { label: string; value: string }) {
   );
 }
 
-/**
- * Formulir pengajuan sesuai PRD §7.3: A. hierarki anggaran (cascading), B. klasifikasi dan uraian,
- * C. berkas. Unit dan prioritas hanya ditampilkan; server menurunkannya dari baris Master RO.
- */
+/** Unit dan prioritas hanya ditampilkan; server menurunkannya dari baris Master RO. */
 export function SubmitPage() {
   const { user } = useAuth();
   const navigate = useNavigate();

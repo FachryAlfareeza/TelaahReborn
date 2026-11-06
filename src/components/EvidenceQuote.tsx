@@ -8,7 +8,6 @@ type Props = {
   onOpen?: (evidence: Evidence) => void;
 };
 
-/** Satu bukti: kutipan verbatim (bila ada), sumber, dan halaman. */
 export function EvidenceQuote({ evidence, onOpen }: Props) {
   const source = `${evidenceSourceLabel[evidence.source]}, halaman ${displayValue(evidence.page)}`;
   const inSubmission = evidence.source === "tor" || evidence.source === "rab";

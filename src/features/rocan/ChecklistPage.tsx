@@ -9,7 +9,7 @@ import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { ErrorState } from "../../components/ErrorState";
 import { ActiveLabel, errorText, Feedback, Field } from "../../components/form";
 import { LoadingState } from "../../components/LoadingState";
-import { Section } from "../../components/Section";
+import { DashboardPage, Panel, StatCard } from "../../components/Dashboard";
 import { formatDate } from "../../lib/date";
 import { executorLabel, inspectionTypeLabel, methodLabel } from "../../lib/verdict";
 import type { CheckExecutor, CheckMethod, ChecklistItem, ChecklistVersion, InspectionType } from "../../types";
@@ -307,10 +307,7 @@ function VersionItems({ version }: { version: ChecklistVersion }) {
   );
 }
 
-/**
- * Checklist dikelola manual oleh ROCAN, berversi, satu versi aktif (PRD §8.7). Versi yang sudah
- * dipakai review tidak bisa diedit; buat versi baru.
- */
+/** Versi yang sudah dipakai review tidak bisa diedit; buat versi baru (PRD §8.7). */
 export function ChecklistPage() {
   const versions = useChecklists();
   const activate = useActivateChecklist();
@@ -327,19 +324,29 @@ export function ChecklistPage() {
   const selected = list.find((v) => v.id === selectedId) ?? active ?? list[0] ?? null;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="page-title">Checklist</h1>
-        {mode.kind === "view" && (
+    <DashboardPage
+      title="Checklist"
+      actions={
+        mode.kind === "view" && (
           <button type="button" className="btn btn-primary" onClick={() => setMode({ kind: "new", from: selected })}>
             Buat versi baru
           </button>
-        )}
-      </div>
+        )
+      }
+      stats={
+        <>
+          <StatCard label="Versi" value={list.length} />
+          <StatCard label="Versi aktif" value={active?.nama_versi ?? "—"} />
+          <StatCard label="Item Screening 1 (aktif)" value={active?.screening_1_items.length ?? 0} />
+          <StatCard label="Item Screening 2 (aktif)" value={active?.screening_2_items.length ?? 0} />
+        </>
+      }
+    >
       {!active && <ErrorState title="Belum ada checklist aktif" message="Pengajuan baru tidak akan direviu sampai ada versi aktif." />}
+      {activate.error && <ErrorState message={activate.error.message} />}
 
       {mode.kind !== "view" ? (
-        <Section title={mode.kind === "edit" ? `Ubah ${selected?.nama_versi ?? ""}` : "Versi baru"}>
+        <Panel title={mode.kind === "edit" ? `Ubah ${selected?.nama_versi ?? ""}` : "Versi baru"} className="lg:flex-1">
           <ChecklistEditor
             editing={mode.kind === "edit" ? selected : null}
             initial={
@@ -351,25 +358,26 @@ export function ChecklistPage() {
             }
             onDone={() => setMode({ kind: "view" })}
           />
-        </Section>
+        </Panel>
       ) : (
-        <>
-          <Section title="Versi">
-            {activate.error && <ErrorState message={activate.error.message} />}
+        <div className="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[320px_minmax(0,1fr)]">
+          <Panel title="Versi" flush>
             {list.length === 0 ? (
-              <p className="text-sm text-ink-soft">Belum ada versi checklist.</p>
+              <p className="p-4 text-sm text-ink-soft">Belum ada versi checklist.</p>
             ) : (
-              <ul className="divide-y divide-line border-y border-line">
+              <ul className="divide-y divide-line">
                 {list.map((v) => (
-                  <li key={v.id} className="flex flex-wrap items-center gap-x-6 gap-y-1 py-3 text-sm">
+                  <li key={v.id} className={`space-y-1 px-4 py-3 text-sm ${v.id === selected?.id ? "bg-sky-pale" : ""}`}>
                     <button type="button" className="link font-medium" onClick={() => setSelectedId(v.id)} aria-current={v.id === selected?.id}>
                       {v.nama_versi}
                     </button>
-                    <span className="text-ink-soft">{formatDate(v.created_at)}</span>
-                    <span className="text-ink-soft">{v.screening_1_items.length} item</span>
-                    <ActiveLabel active={v.is_active} />
+                    <p className="flex flex-wrap items-center gap-x-3 text-xs text-ink-soft">
+                      <span>{formatDate(v.created_at)}</span>
+                      <span>{v.screening_1_items.length} item</span>
+                      <ActiveLabel active={v.is_active} />
+                    </p>
                     {!v.is_active && (
-                      <button type="button" className="btn btn-secondary btn-sm ml-auto" onClick={() => setConfirm(v)}>
+                      <button type="button" className="btn btn-secondary btn-sm" onClick={() => setConfirm(v)}>
                         Aktifkan
                       </button>
                     )}
@@ -377,21 +385,25 @@ export function ChecklistPage() {
                 ))}
               </ul>
             )}
-          </Section>
-          {selected && (
-            <Section
+          </Panel>
+          {selected ? (
+            <Panel
               title={selected.nama_versi}
-              aside={
-                <button type="button" className="link ml-auto text-sm" onClick={() => setMode({ kind: "edit" })}>
+              actions={
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setMode({ kind: "edit" })}>
                   Ubah versi ini
                 </button>
               }
             >
               <p className="mb-3 text-xs text-ink-soft">Versi yang sudah dipakai review tidak dapat diubah; buat versi baru.</p>
               <VersionItems version={selected} />
-            </Section>
+            </Panel>
+          ) : (
+            <Panel>
+              <p className="text-sm text-ink-soft">Belum ada versi.</p>
+            </Panel>
           )}
-        </>
+        </div>
       )}
       <ConfirmDialog
         open={confirm !== null}
@@ -405,6 +417,6 @@ export function ChecklistPage() {
       >
         Versi aktif lain akan dinonaktifkan. Review berikutnya memakai versi ini; review lama tetap memakai versinya.
       </ConfirmDialog>
-    </div>
+    </DashboardPage>
   );
 }

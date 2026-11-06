@@ -69,6 +69,52 @@ body {
   .error-text {
     @apply text-sm text-bad-text;
   }
+
+  /* Dasbor: panel berbingkai, kartu angka. */
+  .panel {
+    @apply rounded-card border border-line bg-white;
+  }
+  .stat-card {
+    @apply min-w-0 rounded-card border border-line bg-white px-3 py-2 transition-colors;
+  }
+
+  /* Tabel bergaya lembar kerja. */
+  .sheet-frame {
+    @apply overflow-auto rounded-control border border-line-strong bg-white;
+  }
+  .sheet {
+    @apply w-full border-separate border-spacing-0 text-left text-sm;
+  }
+  .sheet > thead > tr > th {
+    @apply sticky top-0 z-10 border-r border-b border-line-strong bg-sky-pale px-3 py-2 text-xs font-semibold whitespace-nowrap text-ink;
+  }
+  .sheet > tbody > tr > th,
+  .sheet > tbody > tr > td {
+    @apply border-r border-b border-line px-3 py-2 align-top;
+  }
+  .sheet > thead > tr > th:last-child,
+  .sheet > tbody > tr > :last-child {
+    @apply border-r-0;
+  }
+  .sheet > tbody > tr:last-child > * {
+    @apply border-b-0;
+  }
+  .sheet > tbody > tr:nth-child(even) {
+    @apply bg-[#f8fafc];
+  }
+  .sheet > tbody > tr:hover {
+    @apply bg-sky-pale;
+  }
+  .sheet > tbody > tr[data-selected] {
+    @apply bg-sky-soft;
+  }
+  .sheet > tbody > tr[data-group] > * {
+    @apply bg-white py-1.5 text-sm font-semibold text-ink;
+  }
+  /* Sel isian di dalam lembar kerja: tanpa bingkai sampai difokus. */
+  .cell-input {
+    @apply w-full rounded-control border border-transparent bg-transparent px-1.5 py-1 text-sm hover:border-line-strong focus:border-brand focus:bg-white disabled:hover:border-transparent;
+  }
 }
 
 /* Penanda komponen demo. Warna #FF0000 khusus untuk ini. Garis penuh, sudut siku. */

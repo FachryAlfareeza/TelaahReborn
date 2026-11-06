@@ -7,11 +7,9 @@ type Props = {
   requests: ReviewRequest[];
   statuses: ReviewRequestStatus[];
   role: Role;
-  /** Halaman daftar; tiap status menautkan ke daftar yang sudah disaring. */
   listPath: string;
 };
 
-/** Jumlah pengajuan per status dalam satu baris, tiap angka menuju daftar tersaring. */
 export function StatusSummary({ requests, statuses, role, listPath }: Props) {
   return (
     <ul aria-label="Ringkasan pengajuan" className="flex flex-wrap gap-x-8 gap-y-3 border-y border-line py-3">

@@ -17,10 +17,7 @@ import { isFinal } from "../../lib/status";
 import { CATEGORIES, categoryLabel, decisionLabel } from "../../lib/verdict";
 import type { Category, Evidence, ReviewRequest } from "../../types";
 
-/**
- * Detail pengajuan untuk Satker. Hasil AI tidak pernah tampil di sini; Satker hanya melihat
- * hasil final setelah ROCAN memfinalisasi (PRD FR-VER-03).
- */
+/** Hasil AI tidak pernah tampil di sini; Satker hanya melihat hasil final (PRD FR-VER-03). */
 export function SubmissionDetailPage() {
   const { id = "" } = useParams();
   const request = useReviewRequest(id);

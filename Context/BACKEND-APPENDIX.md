@@ -62,3 +62,5 @@ Dicatat untuk tim backend; frontend tidak membangunnya.
 | Ganti kata sandi oleh pengguna sendiri | Belum ada endpoint; fitur disembunyikan. Super Admin dapat mengatur ulang lewat `PUT /users/{id}`. |
 | Status ekspor kurasi selain `pending` | Frontend mengharapkan `pending/processing/succeeded/failed`, `sample_count`, `sha256`, `created_at`. |
 | Catatan finalisasi untuk Satker | Kontrak menyimpan `note` hanya di riwayat (ROCAN). Satker kini hanya membaca penjelasan per item. Bila Satker perlu membaca catatan revisi, `GET /result` versi Satker perlu menyertakannya. |
+| Berkas dokumen acuan untuk pratinjau | Kontrak §3.8 belum punya endpoint. Usulan: `GET /reference-documents/{doc_id}/file` → `application/pdf`, hak akses `rocan`. Tombol "Lihat PDF" sudah ada; mode real menampilkan "belum tersedia". |
+| Mengubah hasil setelah finalisasi | Kontrak §3.6.3 hanya mengizinkan `PATCH /result/final` saat `siap_diverifikasi`. Bila dibutuhkan, perlu endpoint baru, mis. `POST /review-requests/{id}/reopen`. |

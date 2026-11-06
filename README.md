@@ -35,3 +35,11 @@ npm run dev
   dan `data-demo`.
 
 Jangan menaruh rahasia di variabel `VITE_*`.
+
+## Deploy ke Vercel (mode demo)
+
+Impor repo di Vercel, lalu isi environment variables `VITE_API_MODE=mock` dan `VITE_SHOW_DEMO=true`.
+`vercel.json` mengatur build dan rewrite SPA. Data demo tersimpan di `localStorage` tiap pengguna.
+
+Untuk backend sungguhan: `VITE_API_MODE=real`, isi `VITE_API_URL`, dan izinkan CORS dari domain Vercel.
+Variabel `VITE_*` dibaca saat build, jadi deploy ulang setelah mengubahnya.

@@ -102,7 +102,7 @@ function rowsFor(datasetId: string, fiscalYear: number): MasterRoRow[] {
 
 export const seedRows: MasterRoRow[] = [...rowsFor(DATASET_2026, 2026), ...rowsFor(DATASET_2027, 2027)];
 
-// --- Checklist -----------------------------------------------------------------
+// Checklist
 
 const item = (
   item_id: string,
@@ -164,7 +164,7 @@ export const seedChecklist: ChecklistVersion = {
   created_at: "2026-10-28T09:00:00+07:00",
 };
 
-// --- Dokumen acuan -----------------------------------------------------------
+// Dokumen acuan
 
 const doc = (
   id: string,

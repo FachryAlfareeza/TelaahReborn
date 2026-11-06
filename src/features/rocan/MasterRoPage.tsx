@@ -5,26 +5,21 @@ import { DataTable, type Column } from "../../components/DataTable";
 import { ErrorState } from "../../components/ErrorState";
 import { errorText, Feedback, Field } from "../../components/form";
 import { LoadingState } from "../../components/LoadingState";
-import { Section } from "../../components/Section";
+import { DashboardPage, Panel, Pill, SplitPane, StatCard } from "../../components/Dashboard";
+import { Drawer } from "../../components/Drawer";
 import { UploadDropzone } from "../../components/UploadDropzone";
 import { formatDate } from "../../lib/date";
+import { validateExtension } from "../../lib/files";
 import { displayValue } from "../../lib/empty";
-import type { DatasetIssue, MasterRoDataset, VersionStatus } from "../../types";
+import type { DatasetIssue, MasterRoDataset } from "../../types";
+import { versionStatusLabel, versionStatusTone } from "./labels";
 
-const statusLabel: Record<VersionStatus, string> = { draft: "Draf", active: "Aktif", superseded: "Digantikan" };
 const issueLabel: Record<DatasetIssue["issue"], string> = {
   missing_value: "Nilai kosong",
   duplicate_combination: "Kombinasi ganda",
   inconsistent_metadata: "Metadata tidak konsisten",
   unparseable_code: "Kode tidak terbaca",
 };
-
-async function validateDataset(file: File): Promise<string | null> {
-  const name = file.name.toLowerCase();
-  if (!name.endsWith(".csv") && !name.endsWith(".xlsx")) return "Berkas harus .csv atau .xlsx.";
-  if (file.size === 0) return "Berkas kosong. Pilih berkas lain.";
-  return null;
-}
 
 function ImportForm() {
   const importDataset = useImportDataset();
@@ -56,7 +51,7 @@ function ImportForm() {
         label="Berkas RENJA (CSV atau XLSX)"
         file={file}
         onChange={setFile}
-        validate={validateDataset}
+        validate={(f) => validateExtension(f, [".csv", ".xlsx"])}
         accept=".csv,.xlsx"
         hint="Kolom wajib: program, unit_eselon1, kegiatan, unit_eselon2, prioritas_check, kro, ro."
         disabled={importDataset.isPending}
@@ -90,20 +85,18 @@ function IssueList({ datasetId }: { datasetId: string }) {
   return <DataTable caption="Masalah dataset" columns={columns} rows={issues.data} getRowKey={(i) => `${i.row_number}-${i.issue}-${i.column}`} />;
 }
 
-/**
- * Master RO (PRD §8.3): impor dataset RENJA per tahun, laporan validasi, aktivasi.
- * Baris bermasalah dilaporkan, tidak dibuang diam-diam, dan tidak tampil di dropdown.
- */
+/** Baris bermasalah dilaporkan, tidak dibuang diam-diam, dan tidak tampil di dropdown. */
 export function MasterRoPage() {
   const datasets = useDatasets();
   const activate = useActivateDataset();
   const [issuesFor, setIssuesFor] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<MasterRoDataset | null>(null);
+  const [importing, setImporting] = useState(false);
 
   const columns: Column<MasterRoDataset>[] = [
     { key: "year", header: "Tahun", render: (d) => d.fiscal_year, sortValue: (d) => d.fiscal_year, numeric: true },
     { key: "file", header: "Berkas", render: (d) => d.source_filename, sortValue: (d) => d.source_filename },
-    { key: "status", header: "Status", render: (d) => statusLabel[d.status], sortValue: (d) => d.status },
+    { key: "status", header: "Status", render: (d) => <Pill tone={versionStatusTone[d.status]}>{versionStatusLabel[d.status]}</Pill>, sortValue: (d) => d.status },
     { key: "rows", header: "Baris valid", render: (d) => `${d.valid_row_count} / ${d.row_count}`, numeric: true },
     { key: "issues", header: "Masalah", render: (d) => d.issue_count, sortValue: (d) => d.issue_count, numeric: true },
     { key: "imported", header: "Diimpor", render: (d) => formatDate(d.imported_at), sortValue: (d) => d.imported_at },
@@ -126,28 +119,60 @@ export function MasterRoPage() {
   ];
   const selected = datasets.data?.find((d) => d.id === issuesFor);
 
+  const all = datasets.data ?? [];
+
   return (
-    <div className="space-y-6">
-      <h1 className="page-title">Master RO</h1>
-      <p className="max-w-2xl text-sm text-ink-soft">
-        Pilihan Program, Kegiatan, KRO, dan RO pada formulir pengajuan berasal dari dataset aktif tiap tahun anggaran.
-      </p>
-      <Section title="Impor dataset">
+    <DashboardPage
+      title="Master RO"
+      actions={
+        <button type="button" className="btn btn-primary" onClick={() => setImporting(true)}>
+          Impor dataset
+        </button>
+      }
+      stats={
+        <>
+          <StatCard label="Dataset" value={all.length} />
+          <StatCard
+            label="Tahun aktif"
+            value={all.filter((d) => d.status === "active").map((d) => d.fiscal_year).join(", ") || "—"}
+          />
+          <StatCard label="Draf" value={all.filter((d) => d.status === "draft").length} />
+          <StatCard label="Baris bermasalah" value={all.reduce((n, d) => n + d.issue_count, 0)} />
+        </>
+      }
+    >
+      {activate.error && <ErrorState message={activate.error.message} />}
+      <SplitPane side="460px">
+        <Panel title="Dataset" table>
+          {datasets.isPending && <LoadingState />}
+          {datasets.error && <ErrorState message={datasets.error.message} onRetry={() => void datasets.refetch()} />}
+          {datasets.data && (
+            <DataTable
+              fill
+              caption="Dataset Master RO"
+              columns={columns}
+              rows={datasets.data}
+              getRowKey={(d) => d.id}
+              onRowClick={(d) => setIssuesFor(d.id)}
+              selectedKey={issuesFor}
+              emptyTitle="Belum ada dataset."
+            />
+          )}
+        </Panel>
+        <Panel title={selected ? `Masalah dataset ${selected.fiscal_year}` : "Masalah dataset"}>
+          {selected ? (
+            <div className="space-y-2">
+              <p className="text-xs break-all text-ink-soft">{selected.source_filename}</p>
+              <IssueList datasetId={selected.id} />
+            </div>
+          ) : (
+            <p className="text-sm text-ink-soft">Pilih dataset untuk melihat masalahnya.</p>
+          )}
+        </Panel>
+      </SplitPane>
+      <Drawer open={importing} title="Impor dataset Master RO" onClose={() => setImporting(false)}>
         <ImportForm />
-      </Section>
-      <Section title="Dataset">
-        {activate.error && <ErrorState message={activate.error.message} />}
-        {datasets.isPending && <LoadingState />}
-        {datasets.error && <ErrorState message={datasets.error.message} onRetry={() => void datasets.refetch()} />}
-        {datasets.data && (
-          <DataTable caption="Dataset Master RO" columns={columns} rows={datasets.data} getRowKey={(d) => d.id} emptyTitle="Belum ada dataset." />
-        )}
-      </Section>
-      {selected && (
-        <Section title={`Masalah dataset ${selected.fiscal_year} (${selected.source_filename})`}>
-          <IssueList datasetId={selected.id} />
-        </Section>
-      )}
+      </Drawer>
       <ConfirmDialog
         open={confirm !== null}
         title={`Aktifkan dataset ${confirm?.fiscal_year ?? ""}?`}
@@ -160,6 +185,6 @@ export function MasterRoPage() {
       >
         Dataset aktif lain untuk tahun yang sama akan digantikan. Pengajuan lama tetap memakai data saat diajukan.
       </ConfirmDialog>
-    </div>
+    </DashboardPage>
   );
 }
