@@ -1,33 +1,37 @@
-import { displayValue } from "../lib/empty";
-import type { Submission } from "../types";
+import { categoryLabel } from "../lib/verdict";
+import type { CodeLabel, ReviewRequest } from "../types";
 
-type Context = Submission["context"];
+const codeAndName = (v: CodeLabel) => `${v.code} - ${v.name}`;
 
-/** Gabungan kode dan nama. Kode tetap string; bila keduanya kosong tampil "—". */
-function codeAndName(code: string | null, name: string | null): string {
-  if (code === null && name === null) return displayValue(null);
-  return [code, name].filter((v) => v !== null && v.trim() !== "").join(" - ") || displayValue(null);
-}
-
-/** Konteks program: tahun anggaran sampai RO. Nilai kosong tampil "—". */
-export function ProgramContextPanel({ context }: { context: Context }) {
+/**
+ * Hierarki anggaran pengajuan: snapshot saat diajukan (PRD FR-REQ-02). Kode tetap string.
+ */
+export function ProgramContextPanel({ request }: { request: ReviewRequest }) {
   const rows: [string, string][] = [
-    ["Tahun anggaran", displayValue(context.fiscalYear)],
-    ["Kementerian", displayValue(context.ministry)],
-    ["Unit", displayValue(context.unit)],
-    ["Program", codeAndName(context.programCode, context.programName)],
-    ["Kegiatan", codeAndName(context.activityCode, context.activityName)],
-    ["KRO", codeAndName(context.kroCode, context.kroName)],
-    ["RO", codeAndName(context.roCode, context.roName)],
+    ["Tahun anggaran", String(request.fiscal_year)],
+    ["Unit Eselon I", codeAndName(request.unit_eselon1)],
+    ["Unit Eselon II", codeAndName(request.unit_eselon2)],
+    ["Program", codeAndName(request.program)],
+    ["Kegiatan", codeAndName(request.activity)],
+    ["KRO", codeAndName(request.kro)],
+    ["RO", codeAndName(request.ro)],
+    ["Prioritas", request.priority],
+    ["Kategori usulan (klaim)", categoryLabel[request.proposal_category]],
   ];
   return (
-    <dl className="grid gap-x-8 gap-y-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
-      {rows.map(([label, value]) => (
-        <div key={label}>
-          <dt className="term">{label}</dt>
-          <dd>{value}</dd>
-        </div>
-      ))}
-    </dl>
+    <div className="space-y-3">
+      <dl className="grid gap-x-8 gap-y-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+        {rows.map(([label, value]) => (
+          <div key={label}>
+            <dt className="term">{label}</dt>
+            <dd>{value}</dd>
+          </div>
+        ))}
+      </dl>
+      <div className="text-sm">
+        <p className="term">Deskripsi</p>
+        <p className="whitespace-pre-wrap">{request.description}</p>
+      </div>
+    </div>
   );
 }

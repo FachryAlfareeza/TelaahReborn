@@ -1,17 +1,21 @@
-import type { User } from "../types";
+import type { Role } from "../types";
 
-export type Role = User["role"];
+export type { Role };
 
 export const roleLabel: Record<Role, string> = {
-  SATKER: "Satker",
-  ROCAN: "ROCAN",
-  SUPER_ADMIN: "Super Admin",
+  satker: "Satker",
+  rocan: "ROCAN",
+  super_admin: "Super Admin",
 };
 
+/**
+ * Pembagian peran mengikuti PRD §5: ROCAN memverifikasi dan mengelola checklist, dokumen acuan,
+ * tabel acuan, Master RO, dan kurasi. Super Admin hanya mengelola akun.
+ */
 export const homePath: Record<Role, string> = {
-  SATKER: "/satker",
-  ROCAN: "/rocan",
-  SUPER_ADMIN: "/rocan",
+  satker: "/satker",
+  rocan: "/rocan",
+  super_admin: "/admin/pengguna",
 };
 
 export type NavItem = { to: string; label: string; end?: boolean };
@@ -24,18 +28,16 @@ const satkerNav: NavItem[] = [
 const rocanNav: NavItem[] = [
   { to: "/rocan", label: "Beranda", end: true },
   { to: "/rocan/pengajuan", label: "Daftar Pengajuan" },
+  { to: "/rocan/checklist", label: "Checklist" },
   { to: "/rocan/acuan", label: "Dokumen Acuan" },
+  { to: "/rocan/tabel-acuan", label: "Tabel Acuan" },
+  { to: "/rocan/master-ro", label: "Master RO" },
+  { to: "/rocan/kurasi", label: "Kurasi Data" },
 ];
-const adminNav: NavItem[] = [
-  { to: "/admin/ro", label: "Master RO" },
-  { to: "/admin/checklist", label: "Checklist" },
-  { to: "/admin/kategori", label: "Kategori" },
-  { to: "/admin/pengguna", label: "Akun Pengguna" },
-];
+const adminNav: NavItem[] = [{ to: "/admin/pengguna", label: "Akun Pengguna" }];
 
-/** Menu per peran. Menu pengelolaan hanya untuk Super Admin. */
 export function navForRole(role: Role): NavItem[] {
-  if (role === "SATKER") return satkerNav;
-  if (role === "ROCAN") return rocanNav;
-  return [...rocanNav, ...adminNav];
+  if (role === "satker") return satkerNav;
+  if (role === "rocan") return rocanNav;
+  return adminNav;
 }

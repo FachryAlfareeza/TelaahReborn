@@ -1,196 +1,247 @@
 import { useId, useState, type FormEvent } from "react";
+import { useCreateUser, useDeactivateUser, useFiscalYears, useUnits, useUpdateUser, useUsers } from "../../api/queries";
+import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { DataTable, type Column } from "../../components/DataTable";
 import { ErrorState } from "../../components/ErrorState";
+import { ActiveLabel, errorText, Feedback, Field } from "../../components/form";
 import { LoadingState } from "../../components/LoadingState";
-import { roleLabel, type Role } from "../../lib/roles";
-import type { User } from "../../types";
-import { useAuth } from "../auth/authState";
-import { useCreateUser, useResetUserPassword, useUpdateUser, useUsers } from "./hooks";
-import { ActiveLabel, errorText, Feedback, Field } from "./ui";
+import { Section } from "../../components/Section";
+import { displayValue } from "../../lib/empty";
+import { roleLabel } from "../../lib/roles";
+import type { Role, UnitPair, User } from "../../types";
 
-const roles: Role[] = ["SATKER", "ROCAN", "SUPER_ADMIN"];
+const ROLES: Role[] = ["satker", "rocan", "super_admin"];
+const unitKey = (u: { code: string } | null, v: { code: string } | null) => (u && v ? `${u.code}|${v.code}` : "");
 
-export function UsersPage() {
-  const { user: me } = useAuth();
-  const users = useUsers();
+/** Daftar unit dari dataset Master RO aktif terbaru (PRD K-06). */
+function useUnitOptions() {
+  const years = useFiscalYears();
+  const latest = years.data?.length ? years.data[years.data.length - 1].fiscal_year : null;
+  return useUnits(latest);
+}
+
+function UnitSelect({ id, value, onChange, units }: { id: string; value: string; onChange: (v: string) => void; units: UnitPair[] }) {
+  return (
+    <select id={id} value={value} onChange={(e) => onChange(e.target.value)} className="field">
+      <option value="">Pilih unit</option>
+      {units.map((u) => (
+        <option key={unitKey(u.unit_eselon1, u.unit_eselon2)} value={unitKey(u.unit_eselon1, u.unit_eselon2)}>
+          {u.unit_eselon1.name} / {u.unit_eselon2.name}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+type FormState = { nip: string; nama: string; email: string; password: string; role: Role; unit: string; active: boolean };
+
+function UserForm({ user, onDone }: { user: User | null; onDone: () => void }) {
   const create = useCreateUser();
   const update = useUpdateUser();
-  const reset = useResetUserPassword();
-
-  const [form, setForm] = useState({ name: "", email: "", password: "", role: "ROCAN" as Role, satkerName: "" });
-  const [resetFor, setResetFor] = useState<User | null>(null);
-  const [newPassword, setNewPassword] = useState("");
+  const units = useUnitOptions();
+  const base = useId();
+  const id = (k: string) => `${base}-${k}`;
+  const [form, setForm] = useState<FormState>({
+    nip: user?.nip ?? "",
+    nama: user?.nama ?? "",
+    email: user?.email ?? "",
+    password: "",
+    role: user?.role ?? "satker",
+    unit: unitKey(user?.unit_eselon1 ?? null, user?.unit_eselon2 ?? null),
+    active: user?.is_active ?? true,
+  });
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-  const ids = { name: useId(), email: useId(), pass: useId(), role: useId(), satker: useId(), reset: useId() };
+  const set = <K extends keyof FormState>(k: K) => (v: FormState[K]) => setForm((f) => ({ ...f, [k]: v }));
+  const busy = create.isPending || update.isPending;
 
-  async function run(action: () => Promise<unknown>, done: string) {
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!form.nip.trim() || !form.nama.trim()) return setError("NIP dan nama wajib diisi.");
+    if (!user && (form.password.length < 8 || form.password.length > 128)) return setError("Kata sandi harus 8 sampai 128 karakter.");
+    if (user && form.password && (form.password.length < 8 || form.password.length > 128)) {
+      return setError("Kata sandi baru harus 8 sampai 128 karakter.");
+    }
+    if (form.role === "satker" && !form.unit) return setError("Akun Satker wajib memiliki Unit Eselon I dan II.");
     setError(null);
-    setNotice(null);
+    const [e1, e2] = form.role === "satker" ? form.unit.split("|") : [undefined, undefined];
+    const payload = {
+      nip: form.nip.trim(),
+      nama: form.nama.trim(),
+      email: form.email.trim() || undefined,
+      role: form.role,
+      unit_eselon1_code: e1,
+      unit_eselon2_code: e2,
+    };
     try {
-      await action();
-      setNotice(done);
-      return true;
-    } catch (e) {
-      setError(errorText(e));
-      return false;
+      if (user) {
+        await update.mutateAsync({
+          id: user.id,
+          input: { ...payload, password: form.password || undefined, is_active: form.active },
+        });
+      } else {
+        await create.mutateAsync({ ...payload, password: form.password });
+      }
+      onDone();
+    } catch (err) {
+      setError(errorText(err));
     }
   }
 
-  async function onAdd(e: FormEvent) {
-    e.preventDefault();
-    if (!form.name.trim() || !form.email.trim() || !form.password) {
-      return setError("Isi nama, email, dan kata sandi terlebih dahulu.");
-    }
-    const ok = await run(
-      () =>
-        create.mutateAsync({
-          name: form.name,
-          email: form.email,
-          password: form.password,
-          role: form.role,
-          satkerName: form.role === "SATKER" ? form.satkerName : null,
-        }),
-      `Akun ${form.email.trim()} sudah ditambahkan.`,
-    );
-    if (ok) setForm({ ...form, name: "", email: "", password: "", satkerName: "" });
-  }
+  return (
+    <form onSubmit={onSubmit} noValidate className="max-w-2xl space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field id={id("nip")} label="NIP">
+          <input id={id("nip")} value={form.nip} inputMode="numeric" onChange={(e) => set("nip")(e.target.value)} className="field" />
+        </Field>
+        <Field id={id("nama")} label="Nama">
+          <input id={id("nama")} value={form.nama} onChange={(e) => set("nama")(e.target.value)} className="field" />
+        </Field>
+        <Field id={id("email")} label="Email (opsional)">
+          <input id={id("email")} type="email" value={form.email} onChange={(e) => set("email")(e.target.value)} className="field" />
+        </Field>
+        <Field id={id("password")} label={user ? "Kata sandi baru (kosongkan bila tetap)" : "Kata sandi awal"}>
+          <input
+            id={id("password")}
+            type="password"
+            autoComplete="new-password"
+            value={form.password}
+            onChange={(e) => set("password")(e.target.value)}
+            className="field"
+          />
+        </Field>
+        <Field id={id("role")} label="Peran">
+          <select id={id("role")} value={form.role} onChange={(e) => set("role")(e.target.value as Role)} className="field">
+            {ROLES.map((r) => (
+              <option key={r} value={r}>
+                {roleLabel[r]}
+              </option>
+            ))}
+          </select>
+        </Field>
+        {form.role === "satker" && (
+          <Field id={id("unit")} label="Unit Eselon I / II">
+            {units.isPending ? (
+              <p className="text-sm text-ink-soft">Memuat unit...</p>
+            ) : units.error ? (
+              <p className="error-text">{units.error.message}</p>
+            ) : (
+              <UnitSelect id={id("unit")} value={form.unit} onChange={set("unit")} units={units.data ?? []} />
+            )}
+          </Field>
+        )}
+        {user && (
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={form.active} onChange={(e) => set("active")(e.target.checked)} />
+            Akun aktif
+          </label>
+        )}
+      </div>
+      {form.role === "satker" && (
+        <p className="text-xs text-ink-soft">
+          Satker tidak dapat mengubah unitnya sendiri. Perubahan unit tidak mengubah pengajuan lama.
+        </p>
+      )}
+      <Feedback notice={null} error={error} />
+      <div className="flex gap-2">
+        <button type="submit" disabled={busy} className="btn btn-primary">
+          {busy ? "Menyimpan..." : user ? "Simpan perubahan" : "Buat akun"}
+        </button>
+        <button type="button" disabled={busy} onClick={onDone} className="btn btn-secondary">
+          Batal
+        </button>
+      </div>
+    </form>
+  );
+}
 
-  async function onReset(e: FormEvent) {
-    e.preventDefault();
-    if (!resetFor) return;
-    const target = resetFor;
-    const ok = await run(
-      () => reset.mutateAsync({ id: target.id, password: newPassword }),
-      `Kata sandi ${target.name} sudah diatur ulang.`,
-    );
-    if (ok) {
-      setResetFor(null);
-      setNewPassword("");
-    }
-  }
+/** Pengelolaan akun oleh Super Admin (PRD §8.2): buat, ubah, nonaktifkan; unit Satker dari Master RO. */
+export function UsersPage() {
+  const [role, setRole] = useState<Role | "">("");
+  const roleId = useId();
+  const users = useUsers(role || undefined);
+  const deactivate = useDeactivateUser();
+  const [editing, setEditing] = useState<User | "new" | null>(null);
+  const [confirm, setConfirm] = useState<User | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const columns: Column<User>[] = [
-    { key: "name", header: "Nama", render: (u) => u.name, sortValue: (u) => u.name },
-    { key: "email", header: "Email", render: (u) => u.email, sortValue: (u) => u.email },
-    {
-      key: "role",
-      header: "Peran",
-      render: (u) => (
-        <select
-          aria-label={`Peran ${u.name}`}
-          value={u.role}
-          disabled={u.id === me?.id || update.isPending}
-          onChange={(e) =>
-            void run(
-              () => update.mutateAsync({ id: u.id, patch: { role: e.target.value as Role } }),
-              `Peran ${u.name} sekarang ${roleLabel[e.target.value as Role]}.`,
-            )
-          }
-          className="field w-auto py-1"
-        >
-          {roles.map((r) => (
-            <option key={r} value={r}>
-              {roleLabel[r]}
-            </option>
-          ))}
-        </select>
-      ),
-    },
-    { key: "status", header: "Status", render: (u) => <ActiveLabel active={u.active} /> },
+    { key: "nama", header: "Nama", render: (u) => u.nama, sortValue: (u) => u.nama },
+    { key: "nip", header: "NIP", render: (u) => u.nip, sortValue: (u) => u.nip },
+    { key: "role", header: "Peran", render: (u) => roleLabel[u.role], sortValue: (u) => u.role },
+    { key: "unit", header: "Unit", render: (u) => displayValue(u.unit_eselon2?.name) },
+    { key: "email", header: "Email", render: (u) => displayValue(u.email) },
+    { key: "active", header: "Status", render: (u) => <ActiveLabel active={u.is_active} /> },
     {
       key: "actions",
       header: "Tindakan",
       render: (u) => (
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            aria-label={`${u.active ? "Nonaktifkan" : "Aktifkan"} akun ${u.name}`}
-            disabled={u.id === me?.id || update.isPending}
-            className="btn btn-secondary btn-sm"
-            onClick={() =>
-              void run(
-                () => update.mutateAsync({ id: u.id, patch: { active: !u.active } }),
-                `Akun ${u.name} sekarang ${u.active ? "nonaktif" : "aktif"}.`,
-              )
-            }
-          >
-            {u.active ? "Nonaktifkan" : "Aktifkan"}
+        <span className="flex flex-wrap gap-2">
+          <button type="button" className="link" onClick={() => setEditing(u)} aria-label={`Ubah akun ${u.nama}`}>
+            Ubah
           </button>
-          <button
-            type="button"
-            aria-label={`Atur ulang kata sandi ${u.name}`}
-            className="btn btn-secondary btn-sm"
-            onClick={() => setResetFor(u)}
-          >
-            Atur ulang kata sandi
-          </button>
-        </div>
+          {u.is_active && (
+            <button type="button" className="link" onClick={() => setConfirm(u)} aria-label={`Nonaktifkan akun ${u.nama}`}>
+              Nonaktifkan
+            </button>
+          )}
+        </span>
       ),
     },
   ];
 
   return (
     <div className="space-y-6">
-      <h1 className="page-title">Akun Pengguna</h1>
-      <p className="text-sm text-ink-soft">Akun Satker dibuat lewat pendaftaran. Peran dan status akun Anda sendiri tidak bisa diubah.</p>
-
-      <form aria-label="Tambah akun" onSubmit={(e) => void onAdd(e)} className="space-y-4 border-t border-line pt-6">
-        <h2 className="section-title">Tambah akun</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field id={ids.name} label="Nama">
-            <input id={ids.name} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="field" />
-          </Field>
-          <Field id={ids.email} label="Email">
-            <input id={ids.email} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="field" />
-          </Field>
-          <Field id={ids.pass} label="Kata sandi awal (minimal 8 karakter)">
-            <input id={ids.pass} type="password" autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="field" />
-          </Field>
-          <Field id={ids.role} label="Peran">
-            <select id={ids.role} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role })} className="field">
-              {roles.map((r) => (
-                <option key={r} value={r}>
-                  {roleLabel[r]}
-                </option>
-              ))}
-            </select>
-          </Field>
-          {form.role === "SATKER" && (
-            <Field id={ids.satker} label="Nama satker">
-              <input id={ids.satker} value={form.satkerName} onChange={(e) => setForm({ ...form, satkerName: e.target.value })} className="field" />
-            </Field>
-          )}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="page-title">Akun Pengguna</h1>
+        {editing === null && (
+          <button type="button" className="btn btn-primary" onClick={() => setEditing("new")}>
+            Tambah akun
+          </button>
+        )}
+      </div>
+      {editing !== null && (
+        <Section title={editing === "new" ? "Akun baru" : `Ubah akun ${editing.nama}`}>
+          <UserForm
+            key={editing === "new" ? "new" : editing.id}
+            user={editing === "new" ? null : editing}
+            onDone={() => setEditing(null)}
+          />
+        </Section>
+      )}
+      <Section title="Daftar akun">
+        <div className="mb-3">
+          <label htmlFor={roleId} className="field-label">
+            Peran
+          </label>
+          <select id={roleId} value={role} onChange={(e) => setRole(e.target.value as Role | "")} className="field w-auto">
+            <option value="">Semua peran</option>
+            {ROLES.map((r) => (
+              <option key={r} value={r}>
+                {roleLabel[r]}
+              </option>
+            ))}
+          </select>
         </div>
-        <button type="submit" disabled={create.isPending} className="btn btn-primary">
-          Tambah akun
-        </button>
-      </form>
-
-      {resetFor && (
-        <form aria-label="Atur ulang kata sandi" onSubmit={(e) => void onReset(e)} className="space-y-4 border-t border-line pt-6">
-          <h2 className="section-title">Atur ulang kata sandi {resetFor.name}</h2>
-          <Field id={ids.reset} label="Kata sandi baru (minimal 8 karakter)">
-            <input id={ids.reset} type="password" autoComplete="new-password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="field" />
-          </Field>
-          <div className="flex gap-2">
-            <button type="submit" disabled={reset.isPending} className="btn btn-primary">
-              Simpan kata sandi
-            </button>
-            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setResetFor(null)}>
-              Batal atur ulang
-            </button>
-          </div>
-        </form>
-      )}
-
-      <Feedback notice={notice} error={error} />
-
-      {users.isPending && <LoadingState label="Memuat akun pengguna..." />}
-      {users.error && <ErrorState message={users.error.message} onRetry={() => void users.refetch()} />}
-      {users.data && (
-        <DataTable caption="Daftar akun pengguna" columns={columns} rows={users.data} getRowKey={(u) => u.id} emptyTitle="Belum ada akun" />
-      )}
+        <Feedback notice={notice} error={deactivate.error?.message ?? null} />
+        {users.isPending && <LoadingState />}
+        {users.error && <ErrorState message={users.error.message} onRetry={() => void users.refetch()} />}
+        {users.data && <DataTable caption="Akun pengguna" columns={columns} rows={users.data} getRowKey={(u) => u.id} />}
+      </Section>
+      <ConfirmDialog
+        open={confirm !== null}
+        title={`Nonaktifkan akun ${confirm?.nama ?? ""}?`}
+        confirmLabel="Ya, nonaktifkan"
+        onCancel={() => setConfirm(null)}
+        onConfirm={() => {
+          const target = confirm;
+          setConfirm(null);
+          if (target) {
+            deactivate.mutate(target.id, { onSuccess: () => setNotice(`Akun ${target.nama} dinonaktifkan.`) });
+          }
+        }}
+      >
+        Semua sesi akun ini akan dicabut. Akun dapat diaktifkan kembali lewat Ubah.
+      </ConfirmDialog>
     </div>
   );
 }

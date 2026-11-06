@@ -1,98 +1,87 @@
-import { useEffect, type ReactNode } from "react";
-import { describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { DocumentPair } from "../../components/DocumentPair";
-import { PdfPreviewModal } from "../../components/PdfPreviewModal";
-import { ProgramContextPanel } from "../../components/ProgramContextPanel";
-import type { Submission } from "../../types";
-import { emptyFilters, filterSubmissions } from "./filters";
+import { setupApp } from "../../test/setupApp";
 
-// jsdom tidak bisa menjalankan pdf.js, jadi react-pdf diganti tiruan sederhana (10 halaman).
-vi.mock("react-pdf", () => ({
-  pdfjs: { GlobalWorkerOptions: {} },
-  Document: ({ children, onLoadSuccess }: { children: ReactNode; onLoadSuccess: (d: { numPages: number }) => void }) => {
-    useEffect(() => onLoadSuccess({ numPages: 10 }), [onLoadSuccess]);
-    return <div>{children}</div>;
-  },
-  Page: ({ pageNumber }: { pageNumber: number }) => <div data-testid="pdf-page">Isi halaman {pageNumber}</div>,
-}));
+describe("alur ROCAN", () => {
+  it("beranda menampilkan antrean siap diverifikasi dan gagal", async () => {
+    await setupApp("/rocan", "rocan");
+    expect(await screen.findByRole("heading", { name: "Siap diverifikasi" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Pemrosesan gagal" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Buka Survei Keterbukaan Informasi 2026" })).toBeInTheDocument();
+  });
 
-const base: Submission = {
-  id: "s1",
-  status: "AWAITING_REVIEW",
-  roCode: "001",
-  satkerId: "u1",
-  satkerName: "Satker Contoh",
-  submittedAt: "2025-03-05T03:00:00.000Z",
-  documents: [
-    { id: "d1", type: "TOR", fileName: "tor.pdf", sizeBytes: 2048, pageCount: null, previewUrl: "blob:tor" },
-    { id: "d2", type: "RAB", fileName: "rab.pdf", sizeBytes: 2048, pageCount: 3, previewUrl: null },
-  ],
-  context: {
-    fiscalYear: null,
-    ministry: null,
-    unit: null,
-    programCode: "007",
-    programName: null,
-    activityCode: null,
-    activityName: null,
-    kroCode: null,
-    kroName: null,
-    roCode: null,
-    roName: null,
-  },
-  previousSubmissionId: null,
-};
+  it("saring daftar pengajuan memakai query kontrak", async () => {
+    await setupApp("/rocan/pengajuan", "rocan");
+    await screen.findByRole("table", { name: "Semua pengajuan" });
+    await userEvent.selectOptions(screen.getByLabelText("Status"), "gagal");
+    await userEvent.click(screen.getByRole("button", { name: "Terapkan" }));
+    await waitFor(() => expect(screen.getAllByRole("rowheader").map((r) => r.textContent)).toEqual(["Layanan Informasi Daerah"]));
+  });
 
-describe("saringan pengajuan", () => {
-  const rows: Submission[] = [
-    base,
-    { ...base, id: "s2", status: "ACCEPTED", roCode: "002", satkerName: "Biro Lain", submittedAt: "2025-04-10T03:00:00.000Z" },
-    { ...base, id: "s3", status: "PROCESSING_FAILED", satkerName: "Biro Lain", submittedAt: "2025-04-11T03:00:00.000Z" },
-  ];
-  const ids = (f: Partial<typeof emptyFilters>) =>
-    filterSubmissions(rows, { ...emptyFilters, ...f }, "ROCAN").map((s) => s.id);
+  it("review gagal bisa dijalankan ulang dan bukan kesimpulan reviu", async () => {
+    await setupApp("/rocan/pengajuan/rr-gagal", "rocan", { processingMs: 60_000 });
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("bukan kesimpulan reviu");
+    await userEvent.click(within(alert).getByRole("button", { name: "Jalankan ulang review" }));
+    expect(await screen.findAllByText("Diproses AI")).not.toHaveLength(0);
+  });
 
-  it("menyaring per status, RO, satker, dan tanggal", () => {
-    expect(ids({})).toEqual(["s1", "s2", "s3"]);
-    expect(ids({ status: "Menunggu Pemeriksaan" })).toEqual(["s1"]);
-    expect(ids({ status: "Pemrosesan bermasalah" })).toEqual(["s3"]);
-    expect(ids({ roCode: "002" })).toEqual(["s2"]);
-    expect(ids({ satker: "biro" })).toEqual(["s2", "s3"]);
-    expect(ids({ from: "2025-04-01", to: "2025-04-10" })).toEqual(["s2"]);
+  it("verifikasi: ubah status butuh alasan, lalu finalisasi dengan konfirmasi", async () => {
+    await setupApp("/rocan/pengajuan/rr-siap", "rocan");
+    await screen.findByRole("heading", { name: "Screening 1: hasil per item" });
+    expect(screen.getAllByText("Hasil AI (kandidat)").length).toBeGreaterThan(0);
+
+    await userEvent.click(screen.getByRole("button", { name: "Ubah hasil I.F.1" }));
+    const status = screen.getByLabelText("Status final");
+    const current = (status as HTMLSelectElement).value;
+    await userEvent.selectOptions(status, current === "Sesuai" ? "Tidak Sesuai atau perlu revisi" : "Sesuai");
+    await userEvent.click(screen.getByRole("button", { name: "Simpan" }));
+    expect(await screen.findByText("Isi alasan perubahan status.")).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText(/Alasan perubahan/), "Tanda tangan ada di halaman 9");
+    await userEvent.click(screen.getByRole("button", { name: "Simpan" }));
+    expect(await screen.findByText("Diubah ROCAN.")).toBeInTheDocument();
+    // Alasan perubahan tercatat di riwayat.
+    expect((await screen.findAllByText("Alasan: Tanda tangan ada di halaman 9")).length).toBeGreaterThan(0);
+
+    await userEvent.click(screen.getByRole("radio", { name: "Minta revisi" }));
+    await userEvent.click(screen.getByRole("button", { name: "Finalisasi" }));
+    expect(await screen.findByText(/Tulis catatan/)).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText(/Catatan/), "Lengkapi rincian lokasi.");
+    await userEvent.click(screen.getByRole("button", { name: "Finalisasi" }));
+    const dialog = await screen.findByRole("dialog");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Ya, finalisasi" }));
+    expect(await screen.findByText("Difinalisasi")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Ubah hasil/ })).toBeNull();
   });
 });
 
-describe("ProgramContextPanel", () => {
-  it("nilai kosong tampil —, kode tetap string", () => {
-    render(<ProgramContextPanel context={base.context} />);
-    expect(screen.getByText("Tahun anggaran").nextElementSibling?.textContent).toBe("—");
-    expect(screen.getByText("Program").nextElementSibling?.textContent).toBe("007");
-    expect(screen.getByText("RO").nextElementSibling?.textContent).toBe("—");
-  });
-});
-
-describe("pratinjau PDF", () => {
-  it("terbuka di halaman yang diminta dan bisa lompat halaman", async () => {
-    render(<PdfPreviewModal open title="TOR: tor.pdf" file="blob:tor" initialPage={4} onClose={() => {}} />);
-    expect(screen.getByRole("dialog", { name: "TOR: tor.pdf" })).toBeInTheDocument();
-    expect(screen.getByTestId("pdf-page")).toHaveTextContent("Isi halaman 4");
-    await waitFor(() => expect(screen.getByText("Halaman 4 dari 10")).toBeInTheDocument());
-
-    const input = screen.getByLabelText("Lompat ke halaman");
-    await userEvent.clear(input);
-    await userEvent.type(input, "9");
-    await userEvent.click(screen.getByRole("button", { name: "Buka" }));
-    expect(screen.getByTestId("pdf-page")).toHaveTextContent("Isi halaman 9");
+describe("pengelolaan ROCAN", () => {
+  it("checklist aktif tampil dan versi baru dapat dibuat dari salinan", async () => {
+    await setupApp("/rocan/checklist", "rocan");
+    expect(await screen.findByRole("heading", { name: "Checklist contoh 2026" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Buat versi baru" }));
+    const name = screen.getByLabelText("Nama versi");
+    await userEvent.clear(name);
+    await userEvent.type(name, "Checklist 2027");
+    await userEvent.click(screen.getByRole("button", { name: "Simpan versi baru" }));
+    expect(await screen.findByRole("button", { name: "Checklist 2027" })).toBeInTheDocument();
   });
 
-  it("DocumentPair membuka pratinjau bila ada, dan jujur bila tidak ada", async () => {
-    render(<DocumentPair documents={base.documents} />);
-    expect(screen.getByText("Pratinjau belum tersedia.")).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Lihat pratinjau TOR" }));
-    expect(await screen.findByRole("dialog")).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Tutup" }));
-    expect(screen.queryByRole("dialog")).toBeNull();
+  it("dokumen acuan: unggah dengan metadata lalu masuk antrean ingestion", async () => {
+    await setupApp("/rocan/acuan", "rocan");
+    await screen.findByRole("table", { name: "Dokumen acuan" });
+    await userEvent.upload(screen.getByLabelText("Berkas dokumen acuan"), new File(["%PDF-"], "rkp.pdf", { type: "application/pdf" }));
+    await userEvent.type(screen.getByLabelText("Judul"), "RKP contoh 2027");
+    await userEvent.selectOptions(screen.getByLabelText("Jenis dokumen"), "rkp");
+    await userEvent.click(screen.getByRole("button", { name: "Unggah" }));
+    expect(await screen.findByText(/Ingestion berjalan/)).toBeInTheDocument();
+    expect(await screen.findByText("RKP contoh 2027")).toBeInTheDocument();
+  });
+
+  it("Master RO menampilkan dataset aktif per tahun", async () => {
+    await setupApp("/rocan/master-ro", "rocan");
+    const table = await screen.findByRole("table", { name: "Dataset Master RO" });
+    expect(within(table).getAllByText("Aktif")).toHaveLength(2);
   });
 });

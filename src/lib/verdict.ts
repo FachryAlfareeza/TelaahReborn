@@ -1,66 +1,95 @@
-import type { Screening1Node, Screening2Question, TechnicalStatus } from "../types";
+import type {
+  Category,
+  CheckExecutor,
+  CheckMethod,
+  Decision,
+  Evidence,
+  InspectionType,
+  ItemStatus,
+  PipelineStageName,
+  StageStatus,
+} from "../types";
 
 export type VerdictTone = "success" | "warning" | "error" | "info";
 
-/** Status tampilan satu butir. "TECHNICAL" berarti pemrosesan bermasalah, bukan kesimpulan reviu. */
-export type VerdictKind =
-  | "PASS"
-  | "NOT_PASS"
-  | "MATCH"
-  | "NO_MATCH"
-  | "INSUFFICIENT_EVIDENCE"
-  | "TECHNICAL"
-  | "PENDING";
-
 export type VerdictView = {
-  label: string;
+  label: ItemStatus;
   tone: VerdictTone;
-  icon: "CircleCheck" | "CircleX" | "CircleHelp" | "TriangleAlert" | "Loader";
-};
-
-export const TECHNICAL_LABEL = "Pemrosesan bermasalah";
-
-const views: Record<VerdictKind, VerdictView> = {
-  PASS: { label: "Sesuai", tone: "success", icon: "CircleCheck" },
-  NOT_PASS: { label: "Belum sesuai", tone: "error", icon: "CircleX" },
-  MATCH: { label: "Cocok", tone: "success", icon: "CircleCheck" },
-  NO_MATCH: { label: "Tidak cocok", tone: "error", icon: "CircleX" },
-  INSUFFICIENT_EVIDENCE: { label: "Bukti kurang", tone: "warning", icon: "CircleHelp" },
-  TECHNICAL: { label: TECHNICAL_LABEL, tone: "error", icon: "TriangleAlert" },
-  PENDING: { label: "Belum ada hasil", tone: "info", icon: "Loader" },
-};
-
-export function getVerdictView(kind: VerdictKind): VerdictView {
-  return views[kind];
-}
-
-export const technicalStatusLabel: Record<TechnicalStatus, string> = {
-  NORMAL: "Normal",
-  WRONG_MODEL: "Salah model",
-  READ_FAILED: "Gagal baca",
-  VERIFICATION_FAILED: "Gagal verifikasi",
+  icon: "CircleCheck" | "CircleX" | "TriangleAlert";
 };
 
 /**
- * Status satu butir Screening 1. Butir dengan anak diturunkan dari anak-anaknya.
- * Gagal teknis tidak pernah menjadi kesimpulan: tampil sebagai "TECHNICAL".
- * Urutan: Belum sesuai, gagal teknis, Bukti kurang, belum ada hasil, Sesuai.
+ * Tiga status hasil per item, apa adanya dari PRD §13.2. Tidak ada status lain.
+ * "Terjadi Kesalahan pada proses" adalah kegagalan teknis, bukan kesimpulan reviu.
  */
-export function deriveNodeStatus(node: Screening1Node): VerdictKind {
-  if (node.technicalStatus !== "NORMAL") return "TECHNICAL";
-  if (node.children.length === 0) return node.answer ?? "PENDING";
-  const kinds = node.children.map(deriveNodeStatus);
-  if (kinds.includes("NOT_PASS")) return "NOT_PASS";
-  if (kinds.includes("TECHNICAL")) return "TECHNICAL";
-  if (kinds.includes("INSUFFICIENT_EVIDENCE")) return "INSUFFICIENT_EVIDENCE";
-  if (kinds.includes("PENDING")) return "PENDING";
-  return "PASS";
-}
+const views: Record<ItemStatus, VerdictView> = {
+  Sesuai: { label: "Sesuai", tone: "success", icon: "CircleCheck" },
+  "Tidak Sesuai atau perlu revisi": { label: "Tidak Sesuai atau perlu revisi", tone: "error", icon: "CircleX" },
+  "Terjadi Kesalahan pada proses": { label: "Terjadi Kesalahan pada proses", tone: "warning", icon: "TriangleAlert" },
+};
 
-/** Status satu pertanyaan Screening 2. */
-export function questionKind(q: Screening2Question): VerdictKind {
-  return q.technicalStatus !== "NORMAL" ? "TECHNICAL" : q.answer;
-}
+export const getVerdictView = (status: ItemStatus) => views[status];
+export const isTechnicalError = (status: ItemStatus) => status === "Terjadi Kesalahan pada proses";
 
-export const categoryLabel = (category: number) =>
-  category === 0 ? "Kategori 0 (perlu pemeriksaan manual)" : `Kategori ${category}`;
+/** Kategori RO (PRD §13.3). Klaim Satker, rekomendasi Screening 2, dan kategori final memakai set yang sama. */
+export const CATEGORIES: Category[] = ["K1", "K2", "K3", "K4"];
+export const categoryLabel: Record<Category, string> = {
+  K1: "K1 RO Wajib",
+  K2: "K2 RO Prioritas Strategis",
+  K3: "K3 RO Strategis/Diskresioner",
+  K4: "K4 RO Non-Strategis",
+};
+
+export const decisionLabel: Record<Decision, string> = {
+  selesai_revisi: "Perlu revisi",
+  selesai_disetujui: "Disetujui",
+};
+
+/** Bagian tampilan hasil (PRD FR-VER-02): format, substansi, tabel acuan, Screening 2. */
+export const inspectionTypeLabel: Record<InspectionType, string> = {
+  format_completeness: "Format dan kelengkapan",
+  substance: "Substansi",
+  tor_rab_alignment: "Kesesuaian TOR dan RAB",
+  reference_table: "Tabel acuan (BAS/SBM)",
+  categorization: "Kategorisasi (Screening 2)",
+};
+
+export const methodLabel: Record<CheckMethod, string> = {
+  rule: "Aturan",
+  lookup: "Pencocokan tabel",
+  llm_rag: "AI dengan dokumen acuan",
+  llm: "AI",
+  manual: "Manual oleh ROCAN",
+};
+
+export const executorLabel: Record<CheckExecutor, string> = {
+  team1_lapis_a: "Lapis A (Tim 1)",
+  app: "Aplikasi",
+};
+
+export const evidenceSourceLabel: Record<Evidence["source"], string> = {
+  tor: "TOR",
+  rab: "RAB",
+  reference_document: "Dokumen acuan",
+  reference_table: "Tabel acuan",
+};
+
+/** Nama tahap pipeline dalam bahasa sederhana (PRD §7.4 T1–T8). */
+export const stageLabel: Record<PipelineStageName, string> = {
+  extraction: "Membaca TOR dan RAB",
+  format_check: "Memeriksa format dan kelengkapan",
+  sectioning: "Memetakan bagian dokumen",
+  reference_table_check: "Mencocokkan tabel acuan",
+  retrieval: "Mencari dokumen acuan",
+  substance_assessment: "Menilai substansi",
+  categorization: "Memeriksa kategori",
+  aggregation: "Menyusun hasil",
+};
+
+export const stageStatusLabel: Record<StageStatus, string> = {
+  menunggu: "Menunggu",
+  berjalan: "Berjalan",
+  selesai: "Selesai",
+  gagal: "Gagal",
+  dilewati: "Dilewati",
+};

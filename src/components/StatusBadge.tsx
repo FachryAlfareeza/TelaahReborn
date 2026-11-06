@@ -1,12 +1,12 @@
-import { CircleCheck, CircleX, ClipboardCheck, Loader, TriangleAlert } from "lucide-react";
+import { CircleCheck, ClipboardCheck, Clock, Loader, RotateCcw, TriangleAlert } from "lucide-react";
 import { getStatusView } from "../lib/status";
-import type { Role, SubmissionStatus } from "../types";
+import type { ReviewRequestStatus, Role } from "../types";
 import { toneIcon } from "./tone";
 
-const icons = { Loader, ClipboardCheck, CircleCheck, CircleX, TriangleAlert };
+const icons = { Clock, Loader, ClipboardCheck, CircleCheck, RotateCcw, TriangleAlert };
 
-/** Status dengan teks + ikon berwarna. Label mengikuti peran. */
-export function StatusBadge({ status, role }: { status: SubmissionStatus; role: Role }) {
+/** Status pengajuan dengan teks + ikon berwarna. Label mengikuti peran. */
+export function StatusBadge({ status, role }: { status: ReviewRequestStatus; role: Role }) {
   const view = getStatusView(status, role);
   const Icon = icons[view.icon];
   return (

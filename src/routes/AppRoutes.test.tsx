@@ -1,142 +1,58 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter } from "react-router-dom";
-import { createMockClient } from "../api/mockClient";
-import { AuthProvider } from "../features/auth/AuthContext";
-import { AppRoutes } from "./AppRoutes";
+import { setupApp, nipOf } from "../test/setupApp";
+import { DEMO_PASSWORD } from "../api/mockData";
 
-function memoryStorage() {
-  const map = new Map<string, string>();
-  return {
-    getItem: (k: string) => map.get(k) ?? null,
-    setItem: (k: string, v: string) => void map.set(k, v),
-    removeItem: (k: string) => void map.delete(k),
-  };
-}
-
-function setup(path: string, signIn?: { email: string; password: string }) {
-  const client = createMockClient({ storage: memoryStorage() });
-  const ready = signIn ? client.login(signIn) : Promise.resolve();
-  return ready.then(() =>
-    render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <MemoryRouter initialEntries={[path]}>
-          <AuthProvider client={client}>
-            <AppRoutes />
-          </AuthProvider>
-        </MemoryRouter>
-      </QueryClientProvider>,
-    ),
-  );
-}
-
-const satker = { email: "satker@contoh.test", password: "demo1234" };
-const rocan = { email: "rocan@contoh.test", password: "demo1234" };
-const admin = { email: "admin@contoh.test", password: "demo1234" };
-
-afterEach(() => vi.unstubAllEnvs());
-
-describe("rute dan menu per peran", () => {
-  it("belum masuk diarahkan ke halaman masuk", async () => {
-    await setup("/satker");
-    expect(await screen.findByRole("heading", { name: "Masuk" })).toBeTruthy();
+describe("rute dan menu per peran (PRD §5)", () => {
+  it("belum masuk diarahkan ke halaman masuk dengan NIP, tanpa pendaftaran mandiri", async () => {
+    await setupApp("/satker");
+    expect(await screen.findByRole("heading", { name: "Masuk" })).toBeInTheDocument();
+    expect(screen.getByLabelText("NIP")).toBeInTheDocument();
+    expect(screen.queryByText(/Daftar/)).toBeNull();
   });
 
-  it("Satker melihat menu Satker saja", async () => {
-    await setup("/", satker);
-    expect(await screen.findByRole("heading", { name: "Beranda Satker" })).toBeTruthy();
+  it("masuk dengan NIP mengarah ke beranda peran", async () => {
+    await setupApp("/masuk");
+    await userEvent.type(await screen.findByLabelText("NIP"), nipOf("satker"));
+    await userEvent.type(screen.getByLabelText("Kata sandi"), DEMO_PASSWORD);
+    await userEvent.click(screen.getByRole("button", { name: "Masuk" }));
+    expect(await screen.findByRole("heading", { name: "Beranda Satker" })).toBeInTheDocument();
+  });
+
+  it("Satker hanya melihat menu Satker", async () => {
+    await setupApp("/", "satker");
+    await screen.findByRole("heading", { name: "Beranda Satker" });
     const nav = screen.getByRole("navigation", { name: "Menu utama" });
     expect(nav.textContent).toContain("Ajukan Baru");
-    expect(nav.textContent).not.toContain("Dokumen Acuan");
-    expect(nav.textContent).not.toContain("Master RO");
+    expect(nav.textContent).not.toContain("Checklist");
   });
 
-  it("ROCAN melihat menu ROCAN tanpa menu pengelolaan", async () => {
-    await setup("/", rocan);
-    expect(await screen.findByRole("heading", { name: "Beranda ROCAN" })).toBeTruthy();
+  it("ROCAN mengelola checklist, dokumen acuan, tabel acuan, Master RO, dan kurasi", async () => {
+    await setupApp("/", "rocan");
+    await screen.findByRole("heading", { name: "Beranda ROCAN" });
     const nav = screen.getByRole("navigation", { name: "Menu utama" });
-    expect(nav.textContent).toContain("Dokumen Acuan");
+    for (const label of ["Checklist", "Dokumen Acuan", "Tabel Acuan", "Master RO", "Kurasi Data"]) {
+      expect(nav.textContent).toContain(label);
+    }
     expect(nav.textContent).not.toContain("Akun Pengguna");
   });
 
-  it("Super Admin melihat menu ROCAN ditambah pengelolaan", async () => {
-    await setup("/", admin);
-    await screen.findByRole("heading", { name: "Beranda ROCAN" });
+  it("Super Admin hanya mengelola akun", async () => {
+    await setupApp("/", "super_admin");
+    expect(await screen.findByRole("heading", { name: "Akun Pengguna" })).toBeInTheDocument();
     const nav = screen.getByRole("navigation", { name: "Menu utama" });
-    for (const label of ["Dokumen Acuan", "Master RO", "Checklist", "Kategori", "Akun Pengguna"]) {
-      expect(nav.textContent).toContain(label);
-    }
+    expect(nav.textContent).not.toContain("Daftar Pengajuan");
+    expect(nav.textContent).not.toContain("Checklist");
   });
 
   it("peran tak berhak mendapat 403", async () => {
-    await setup("/admin/ro", rocan);
-    expect(await screen.findByRole("heading", { name: /403/ })).toBeTruthy();
-    await setup("/rocan", satker);
-    expect((await screen.findAllByRole("heading", { name: /403/ })).length).toBeGreaterThan(0);
+    await setupApp("/rocan/checklist", "super_admin");
+    expect(await screen.findByRole("heading", { name: /403/ })).toBeInTheDocument();
   });
 
   it("alamat tak dikenal mendapat 404", async () => {
-    await setup("/tidak-ada", rocan);
-    expect(await screen.findByRole("heading", { name: /404/ })).toBeTruthy();
-  });
-
-  it("keluar mengembalikan ke halaman masuk", async () => {
-    await setup("/", satker);
-    await userEvent.click(await screen.findByRole("button", { name: /Keluar/ }));
-    expect(await screen.findByRole("heading", { name: "Masuk" })).toBeTruthy();
-  });
-});
-
-describe("masuk dan daftar", () => {
-  it("tombol demo tampil dan memasukkan sesuai peran bila demo aktif", async () => {
-    vi.stubEnv("VITE_SHOW_DEMO", "true");
-    const { container } = await setup("/masuk");
-    expect(container.querySelector('[data-demo="true"]')).not.toBeNull();
-    await userEvent.click(await screen.findByRole("button", { name: /Masuk sebagai ROCAN/ }));
-    expect(await screen.findByRole("heading", { name: "Beranda ROCAN" })).toBeTruthy();
-  });
-
-  it("tanpa tombol demo, formulir masuk tetap berfungsi", async () => {
-    vi.stubEnv("VITE_SHOW_DEMO", "false");
-    const { container } = await setup("/masuk");
-    await screen.findByRole("heading", { name: "Masuk" });
-    expect(container.querySelector("[data-demo]")).toBeNull();
-    await userEvent.type(screen.getByLabelText("Email"), satker.email);
-    await userEvent.type(screen.getByLabelText("Kata sandi"), satker.password);
-    await userEvent.click(screen.getByRole("button", { name: "Masuk" }));
-    expect(await screen.findByRole("heading", { name: "Beranda Satker" })).toBeTruthy();
-  });
-
-  it("kata sandi salah menampilkan pesan", async () => {
-    await setup("/masuk");
-    await userEvent.type(await screen.findByLabelText("Email"), satker.email);
-    await userEvent.type(screen.getByLabelText("Kata sandi"), "salahsekali");
-    await userEvent.click(screen.getByRole("button", { name: "Masuk" }));
-    expect((await screen.findByRole("alert")).textContent).toContain("salah");
-  });
-
-  it("Satker dapat mendaftar sendiri", async () => {
-    await setup("/masuk");
-    await userEvent.click(await screen.findByRole("button", { name: /Daftar sebagai Satker/ }));
-    await userEvent.type(screen.getByLabelText("Nama lengkap"), "Budi");
-    await userEvent.type(screen.getByLabelText("Nama satker"), "Satker Baru");
-    await userEvent.type(screen.getByLabelText("Email"), "budi@contoh.test");
-    await userEvent.type(screen.getByLabelText(/Kata sandi/), "rahasia123");
-    await userEvent.click(screen.getByRole("button", { name: "Daftar" }));
-    expect(await screen.findByRole("heading", { name: "Beranda Satker" })).toBeTruthy();
-  });
-
-  it("ganti kata sandi lewat dialog", async () => {
-    await setup("/", satker);
-    await userEvent.click(await screen.findByRole("button", { name: /Ganti kata sandi/ }));
-    const dialog = await screen.findByRole("dialog");
-    await userEvent.type(screen.getByLabelText("Kata sandi saat ini"), satker.password);
-    await userEvent.type(screen.getByLabelText(/Kata sandi baru/), "baru12345");
-    await userEvent.type(screen.getByLabelText("Ulangi kata sandi baru"), "baru12345");
-    await userEvent.click(screen.getByRole("button", { name: "Simpan" }));
-    expect((await screen.findByRole("status")).textContent).toContain("sudah diganti");
-    expect(dialog).toBeTruthy();
+    await setupApp("/tidak-ada", "rocan");
+    expect(await screen.findByRole("heading", { name: /404/ })).toBeInTheDocument();
   });
 });

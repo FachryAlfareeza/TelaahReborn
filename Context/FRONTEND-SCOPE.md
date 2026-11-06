@@ -1,140 +1,142 @@
 # Telaah Reborn: Lingkup Frontend (Dokumen Utama)
 
-> Dokumen ini adalah acuan untuk menulis frontend baru dari nol. Frontend ini berdiri sendiri
-> dan tidak bergantung pada kode frontend lama. Bahasa semua teks di layar: **Bahasa Indonesia
+> Dokumen ini adalah acuan frontend Telaah Reborn. Bahasa semua teks di layar: **Bahasa Indonesia
 > sederhana** untuk semua peran. Detail teknis disimpan di bagian belakang aplikasi (lihat 7).
+
+> **Proyek ini hanya frontend (diputuskan 6 November 2026).** Jangan menulis, mengubah, atau
+> merencanakan kode backend (FastAPI, pipeline reviu, Celery, database, Qdrant, LLM), baik di
+> repo ini maupun di `tor-rab-ai-reviewer`. Backend dikerjakan tim lain. Frontend cukup
+> mengikuti kontrak API mereka dan memakai adapter mock selama backend belum siap. Bila sebuah
+> fitur butuh endpoint yang belum ada, catat kebutuhannya di `BACKEND-APPENDIX.md` bagian 4,
+> jangan membangunnya.
+
+> **Acuan yang mengikat (diputuskan 6 November 2026).** Bila dokumen ini berbeda dengan dokumen
+> backend, yang menang adalah (urut): `tor-rab-ai-reviewer/docs/prd.md` (PRD v2.1), lalu
+> `tor-rab-ai-reviewer/docs/api/contract.md` (kontrak API v2.1). Dokumen ini menurunkan isi
+> keduanya untuk frontend, ditambah aturan yang hanya milik frontend (desain, penanda demo,
+> bahasa). Nomor seperti "PRD §7.3" dan "K-25" merujuk dokumen tersebut.
 
 ---
 
 ## 1. Produk
 
-Aplikasi untuk mereviu **TOR** (Kerangka Acuan Kerja) dan **RAB** (Rencana Anggaran Biaya) setiap
+Aplikasi untuk mereviu **TOR** (Kerangka Acuan Kerja) dan **RAB** (Rincian Anggaran Biaya) setiap
 **Rincian Output (RO)** di Biro Perencanaan.
 
-- Satker mengunggah TOR dan RAB.
-- Sistem AI memeriksa otomatis (Screening 1 dan Screening 2).
-- ROCAN memeriksa hasilnya dan memutuskan: diterima atau ditolak.
-- Hasil AI selalu **kandidat**. Keputusan final ada di ROCAN (manusia).
+- Satker mengajukan program: hierarki anggaran, kategori usulan, judul, deskripsi, PDF TOR dan RAB.
+- Reviu otomatis berjalan begitu pengajuan terkirim (PRD K-25), tanpa tombol tambahan.
+- ROCAN memverifikasi hasil AI, mengedit hasil final, lalu memfinalisasi: **Setujui** atau
+  **Minta revisi**, dengan kategori final.
+- Hasil AI selalu **kandidat** dan tidak pernah berubah (Hasil_AI). Perubahan ROCAN disimpan
+  terpisah (Hasil_Final) beserta riwayatnya. Satker hanya melihat hasil final setelah finalisasi.
 
 ### Alur sistem (pandangan frontend)
 
 ```
-Satker unggah PDF (TOR + RAB) lalu tekan "Kirim"
-  -> dokumen diproses di sistem (vector DB): TOR dibandingkan dengan RAB,
-     lalu dengan dokumen acuan (sudah diekstrak menjadi JSON terpotong)
-  -> Screening 1 dan Screening 2 jalan otomatis, tanpa tombol tambahan
-  -> hasil dikirim ke frontend lewat API
-  -> ROCAN memeriksa dan memutuskan
+Satker mengisi formulir dan menekan "Kirim"
+  -> status menunggu_review, lalu dalam_proses (otomatis bila ada checklist aktif)
+  -> 8 tahap pipeline (T1–T8), frontend memantau progres lewat polling
+  -> siap_diverifikasi: ROCAN memeriksa dan mengedit Hasil_Final
+  -> ROCAN memfinalisasi: selesai_disetujui atau selesai_revisi
+  -> selesai_revisi: Satker mengirim versi revisi (maks. 3 kali)
 ```
 
-Satu-satunya aksi manual Satker adalah menekan tombol **Kirim**. Setelah itu proses berjalan
-sendiri.
+Satu-satunya aksi manual Satker adalah menekan **Kirim**. ROCAN hanya bisa menjalankan ulang
+review yang **gagal** (`retry-review`).
 
 ---
 
 ## 2. Peran
 
-| Peran | Tugas utama |
+| Peran | Tugas utama (PRD §5) |
 |---|---|
-| Satker | Mengunggah TOR dan RAB, memantau status pengajuan. |
-| ROCAN | Memeriksa hasil AI, memberi keputusan (Diterima / Ditolak) dan catatan. Mengelola dokumen acuan. |
-| Super Admin | Semua kemampuan ROCAN, ditambah pengelolaan data master: Master RO, checklist, kategori, akun pengguna. |
+| Satker | Mengajukan program, memantau progres, membaca hasil final, mengirim revisi. Hanya melihat pengajuan miliknya; dropdown dibatasi unitnya. |
+| ROCAN | Memverifikasi dan memfinalisasi hasil, menjalankan ulang review gagal, mengelola checklist, dokumen acuan, tabel acuan (BAS/SBM), Master RO, dan kurasi data. |
+| Super Admin | Mengelola akun dan peran, termasuk menetapkan Unit Eselon I/II akun Satker. **Tidak** memverifikasi pengajuan. |
 
-Pembagian utama di UI: **Super Admin** atau **bukan Super Admin**. Menu pengelolaan hanya
-tampil untuk Super Admin.
+Penjaga rute di frontend hanya untuk tampilan; pembatasan sebenarnya ada di backend.
+
+### Masuk dan akun
+
+- Masuk dengan **NIP dan kata sandi** (PRD FR-AUTH-01). Pesan gagal generik.
+- **Tidak ada pendaftaran mandiri.** Semua akun dibuat Super Admin (PRD §7.2).
+- Akun Satker wajib punya Unit Eselon I dan II yang dipilih dari daftar unit Master RO. Satker
+  tidak bisa mengubah unitnya.
+- Token access dan refresh disimpan di localStorage (PRD FR-AUTH-05, OQ-07). Saat 401, frontend
+  mencoba refresh sekali, lalu kembali ke halaman masuk.
+- Ganti kata sandi sendiri **belum ada** di kontrak; Super Admin mengatur ulang lewat Ubah akun.
 
 ### Tombol peran demo (sementara)
 
-Halaman masuk/daftar memiliki **3 tombol, satu per peran** (Satker, ROCAN, Super Admin) untuk
-masuk cepat. Tombol ini **hanya untuk demo** dan wajib ditandai sesuai aturan di bagian 8.
-Tombol ini harus mudah dihapus tanpa mengubah logika login asli.
+Halaman masuk memiliki **3 tombol, satu per peran** untuk masuk cepat. Tombol ini hanya tampil
+pada adapter mock, wajib ditandai sesuai bagian 8, dan bisa dihapus tanpa mengubah logika masuk.
 
 ---
 
 ## 3. Status Pengajuan
 
-Satu pengajuan, dua sudut pandang. Label berbeda, kondisi sama.
+Enam status dari kontrak §2 (`ReviewRequestStatus`). Label ditentukan satu fungsi pemetaan per
+peran (`src/lib/status.ts`), bukan ditulis ulang di tiap komponen.
 
-| Satker melihat | ROCAN dan Super Admin melihat | Arti |
-|---|---|---|
-| Terupload | Diproses AI | Berkas diterima, Screening 1 dan 2 sedang berjalan. |
-| Diperiksa | Menunggu Pemeriksaan | AI selesai, menunggu keputusan ROCAN. |
-| Diterima | Diterima | ROCAN menerima. |
-| Ditolak | Ditolak | ROCAN menolak, disertai catatan. |
+| Status (kontrak) | Satker melihat | ROCAN melihat | Arti |
+|---|---|---|---|
+| `menunggu_review` | Menunggu reviu | Menunggu reviu | Pengajuan diterima, review belum dimulai (mis. belum ada checklist aktif). |
+| `dalam_proses` | Sedang direviu | Diproses AI | Pipeline berjalan. |
+| `siap_diverifikasi` | Diperiksa ROCAN | Siap diverifikasi | Hasil AI siap, menunggu ROCAN. |
+| `gagal` | Sedang direviu | Pemrosesan gagal | Hasil AI tidak dapat disusun. ROCAN bisa menjalankan ulang. |
+| `selesai_revisi` | Perlu revisi | Perlu revisi | ROCAN meminta Satker memperbaiki. |
+| `selesai_disetujui` | Disetujui | Disetujui | ROCAN menyetujui. |
 
 Aturan UI:
-- Label status ditentukan dari peran pengguna lewat satu fungsi pemetaan, bukan ditulis ulang
-  di tiap komponen.
 - Status ditampilkan dengan **teks + ikon + warna**, tidak hanya warna.
-- Kegagalan sistem (misal pemrosesan gagal) tidak boleh tampil sebagai kesimpulan reviu.
-  Tampilkan sebagai "Pemrosesan bermasalah" dengan opsi kirim ulang untuk ROCAN/Super Admin.
-  (Sudah dikonfirmasi, lihat bagian 10.)
+- Kegagalan teknis tidak boleh tampil sebagai kesimpulan reviu. Satker tidak dilibatkan saat
+  review gagal (kontrak §4.3), jadi baginya `gagal` tetap terbaca "Sedang direviu".
 
 ---
 
 ## 4. Model Reviu
 
-### 4.1 Screening 1: kualitas isi TOR/RAB
+### 4.1 Status hasil per item (PRD §13.2)
 
-Checklist berbentuk **induk dengan banyak anak**. Status induk diturunkan dari anak-anaknya.
+Hanya tiga, ditampilkan apa adanya:
 
-Jawaban per butir: `PASS` (Sesuai), `NOT_PASS` (Belum sesuai), `INSUFFICIENT_EVIDENCE`
-(Bukti kurang). Tampilkan dengan label Indonesia sederhana.
-
-Setiap jawaban punya:
-- **Kutipan bukti** persis dari dokumen (maks. 40 kata),
-- **sumber**: jenis dokumen (TOR / RAB / Acuan) dan nomor halaman,
-- **rekomendasi** bila Belum sesuai.
-
-Induk awal (boleh bertambah, karena checklist dapat dipecah lebih teknis oleh Super Admin):
-
-| Kode | Isi singkat | Dokumen yang dikutip |
-|---|---|---|
-| II.A.1 | Selaras dengan prioritas nasional, Renstra, dan arahan | TOR + Acuan |
-| II.C.1 | Latar belakang dan rincian output dijelaskan lengkap | TOR |
-| II.C.2 | Manajemen risiko dan mitigasi | TOR + Acuan |
-| IV.A.1 | RAB menjabarkan kebutuhan TOR | TOR + RAB |
-| IV.B.1 | Kode akun sesuai standar | RAB + Acuan |
-| IV.C.1 | Harga satuan tidak melebihi standar biaya | RAB + Acuan |
-
-**Anak dari II.C.1 (kelengkapan penjelasan RO, versi 5W+1H yang direvisi):**
-
-| Unsur | Dicari di bagian TOR |
+| Status | Arti |
 |---|---|
-| Apa (What) | Latar belakang: gambaran umum |
-| Mengapa (Why) | Latar belakang: dasar hukum dan gambaran umum |
-| Siapa (Who) | Penerima manfaat |
-| Kapan (When) | Tahapan dan waktu pelaksanaan |
-| Di mana (Where) | Metode pelaksanaan: rincian lokasi |
-| Bagaimana (How) | Metode pelaksanaan |
+| Sesuai | Dokumen memenuhi kriteria. |
+| Tidak Sesuai atau perlu revisi | Dokumen tidak memenuhi kriteria. |
+| Terjadi Kesalahan pada proses | Pemeriksaan gagal secara teknis atau bahan tidak tersedia. **Bukan** kesimpulan reviu; selalu disertai `error_reason`. |
 
-> Catatan: pemetaan ini bisa berubah lagi (kemungkinan dibatalkan). Simpan sebagai data
-> checklist yang bisa diedit, **jangan ditulis permanen di kode komponen**.
+Setiap item hasil (`ResultItem`, kontrak §3.6.1) punya: kode tampilan, bagian, jenis pemeriksaan,
+metode, pelaksana, status, penjelasan, bukti (`tor`/`rab`/dokumen acuan/tabel acuan, halaman,
+kutipan verbatim bila ada), dan perhitungan untuk item tabel acuan (rumus, nilai, sumber angka).
 
-**Anak dari II.C.2 (manajemen risiko, bagian 2B.2):** diperiksa per bagian/section TOR,
-masing-masing menjadi sub-butir sendiri.
+### 4.2 Screening 1: bagian hasil (PRD FR-VER-02)
 
-### 4.2 Screening 2: kategori prioritas RO
+Hasil ditampilkan per bagian, berurutan:
+1. **Format dan kelengkapan** (Lapis A, dari modul Tim 1),
+2. **Substansi**,
+3. **Kesesuaian TOR dan RAB**,
+4. **Tabel acuan (BAS/SBM)**: dihitung deterministik, bukan oleh AI.
 
-- 12 pertanyaan (C01 sampai C12), diperiksa berurutan per kelompok kategori.
-- Jawaban: `MATCH`, `NO_MATCH`, `INSUFFICIENT_EVIDENCE`.
-- Hasil: **Kategori 1, 2, 3, 4**, atau **Kategori 0** (perlu pemeriksaan manual).
-- Kategori pertama yang `MATCH` menang. Bukti kurang tidak otomatis menjadi Kategori 4.
+Item induk dan sub-item diambil dari relasi `parent_item_id` pada checklist versi yang dipakai.
+Contoh sub-item 5W+1H pada II.C.1 disimpan sebagai **data checklist** (kolom `source`), bukan
+ditulis di kode, karena pemetaannya bisa berubah.
 
-| Kategori | Pertanyaan | Contoh |
-|---|---|---|
-| 1 | C01 sampai C03 | Prioritas nasional, belanja wajib, layanan publik |
-| 2 | C04 sampai C10 | Operasional, PNBP, multiyears, dukungan manajemen, arahan |
-| 3 | C11 | Program prioritas kementerian |
-| 4 | C12 | Tidak terkait langsung (cadangan) |
+### 4.3 Screening 2: verifikasi klaim kategori (PRD §8.9)
 
-Tampilkan: kategori hasil, pertanyaan penentu, status per pertanyaan, kutipan bukti.
+- Kategori usulan Satker adalah **klaim**: K1 RO Wajib, K2 RO Prioritas Strategis,
+  K3 RO Strategis/Diskresioner, K4 RO Non-Strategis.
+- Sistem memberi **kategori rekomendasi** dan status kesesuaian klaim (Sesuai bila sama,
+  Tidak Sesuai atau perlu revisi bila berbeda, Terjadi Kesalahan pada proses bila gagal dinilai).
+- Prioritas Nasional dari Master RO ditampilkan sebagai konteks, tidak menentukan kategori.
+- **ROCAN menetapkan kategori final** saat finalisasi.
+- Kategori 0 dan pertanyaan C01–C12 **tidak dipakai** (PRD K-20).
 
-### 4.3 Dua jenis status pada hasil
+### 4.4 Progres
 
-- **Status isi**: Sesuai / Belum sesuai / Bukti kurang (Screening 1); Cocok / Tidak cocok /
-  Bukti kurang (Screening 2).
-- **Status teknis**: normal, atau salah model, gagal baca, gagal verifikasi. Tampil terpisah.
+Delapan tahap (`extraction` sampai `aggregation`) dengan status `menunggu`, `berjalan`, `selesai`,
+`gagal`, `dilewati`. Tampilkan tahap aktif, tahap selesai, dan durasi. **Tanpa persentase atau
+perkiraan waktu** (PRD FR-PIPE-05). Polling tiap 5 detik selama `dalam_proses` (PRD FR-PRG-01).
 
 ---
 
@@ -143,65 +145,84 @@ Tampilkan: kategori hasil, pertanyaan penentu, status per pertanyaan, kutipan bu
 ### 5.1 Layar
 
 **Umum**
-- **Masuk / Daftar**: formulir masuk, daftar, dan 3 tombol peran demo (ditandai merah).
-- **Kerangka aplikasi**: navigasi samping atau atas sesuai peran, nama pengguna, keluar,
-  ganti kata sandi.
+- **Masuk**: NIP, kata sandi, 3 tombol peran demo (ditandai merah).
+- **Kerangka aplikasi**: navigasi samping per peran, notifikasi dengan jumlah belum dibaca, nama dan
+  NIP pengguna, keluar.
+- **Notifikasi**: notifikasi belum dibaca, tandai dibaca, tautan ke pengajuan terkait.
 
 **Satker**
-- **Beranda Satker**: ringkasan jumlah per status, tombol "Ajukan Baru".
-- **Ajukan Baru**: pilih RO, unggah TOR (PDF) dan RAB (PDF), pratinjau, validasi, tombol Kirim.
-- **Daftar Pengajuan Saya**: tabel + filter status (Terupload / Diperiksa / Diterima / Ditolak).
-- **Detail Pengajuan (Satker)**: pasangan dokumen, status, keputusan dan catatan ROCAN bila ada.
-  Satker **tidak** melihat detail teknis.
+- **Beranda Satker**: ringkasan jumlah per status, pengajuan terbaru, tombol "Ajukan Baru".
+- **Ajukan Baru** (PRD §7.3), tiga bagian:
+  - A. Hierarki anggaran: Tahun Anggaran (hanya tahun dengan dataset aktif) → Program → Kegiatan →
+    KRO → RO (dropdown bertingkat, difilter unit akun). Unit Eselon I/II dan Prioritas hanya
+    ditampilkan (read-only).
+  - B. Judul atau nama usulan (wajib), Deskripsi (wajib), Kategori usulan K1–K4 (wajib).
+  - C. PDF TOR dan RAB (wajib): ekstensi `.pdf`, MIME `application/pdf`, signature `%PDF-`, tidak
+    kosong, maks. 20 MB.
+- **Pengajuan Saya**: tabel + saring status.
+- **Detail Pengajuan (Satker)**: berkas (pratinjau dan unduh), hierarki anggaran, progres saat
+  berjalan, hasil final setelah finalisasi (keputusan, kategori final, item hasil final), formulir
+  revisi bila `selesai_revisi`, riwayat versi. **Tidak** menampilkan hasil AI atau bagian teknis.
 
 **ROCAN**
-- **Beranda ROCAN**: antrean "Menunggu Pemeriksaan", ringkasan per status.
-- **Daftar Pengajuan**: semua pengajuan, filter status, kategori RO, satker, tanggal.
+- **Beranda ROCAN**: ringkasan semua status; antrean siap diverifikasi, gagal, sedang diproses,
+  menunggu reviu.
+- **Daftar Pengajuan**: saring status, tahun anggaran, kode program/kegiatan/KRO/RO, kategori
+  usulan, rentang tanggal (PRD FR-REQ-03).
 - **Detail Reviu** (layar terpenting, lihat 5.3).
-- **Dokumen Acuan**: tambah, lihat, aktif/nonaktifkan, hapus; dikelompokkan per kategori acuan.
+- **Checklist**: daftar versi, satu aktif; lihat item; buat versi baru (dari salinan); ubah versi
+  yang belum dipakai; aktifkan.
+- **Dokumen Acuan**: unggah PDF/XLSX dengan jenis, judul, nomor, tahun berlaku, status berlaku;
+  pantau ingestion; nonaktifkan, aktifkan kembali, ingest ulang. Tidak ada hapus.
+- **Tabel Acuan**: ekstraksi tabel kandidat → unduh CSV → verifikasi manusia → impor → aktifkan.
+- **Master RO**: impor dataset RENJA (CSV/XLSX) per tahun, laporan masalah per baris, aktivasi.
+- **Kurasi Data**: tinjau sampel (hasil AI vs hasil final), setujui/tolak, ekspor dataset.
 
-**Super Admin** (semua layar ROCAN, ditambah)
-- **Master RO**: kode, deskripsi, aktif/nonaktif.
-- **Pengelolaan Checklist**: versi checklist, induk dan anak, urutan, dokumen wajib kutip,
-  aktif/nonaktif. Pecah satu checklist menjadi beberapa checklist baru.
-- **Pengelolaan Kategori** (dua tab):
-  1. Kategori prioritas RO (Kategori 0 sampai 4, pertanyaan C01 sampai C12 per kategori),
-  2. Kategori dokumen (TOR, RAB, jenis acuan seperti RPJMN, Renstra, PMK/SBM).
-- **Akun Pengguna**: tambah, ubah peran, aktif/nonaktif, reset kata sandi.
+**Super Admin**
+- **Akun Pengguna**: daftar dengan saring peran; buat, ubah, nonaktifkan; atur ulang kata sandi;
+  unit Satker dipilih dari `GET /master-data/units`.
 
-**Bagian belakang (teknis)** untuk ROCAN dan Super Admin: lihat 7.
+**Bagian belakang (teknis)** untuk ROCAN: lihat 7.
 
 ### 5.2 Komponen bersama
 
 | Komponen | Fungsi |
 |---|---|
-| `StatusBadge` | Status dengan teks + ikon + warna, label menurut peran. |
-| `DocumentPair` | Menampilkan TOR dan RAB berdampingan: nama berkas, pratinjau PDF. |
-| `PdfPreviewModal` | Pratinjau PDF, bisa lompat ke halaman bukti. |
-| `UploadDropzone` | Unggah PDF, validasi tipe/ukuran, status unggah. |
-| `ProgramContextPanel` | Tahun anggaran, kementerian/unit, program, kegiatan, KRO, RO. Nilai kosong tampil "—". Kode tetap string. |
-| `ChecklistTree` | Induk dan anak, bisa dibuka/tutup, status turunan di induk. |
-| `VerdictRow` | Satu butir: status, rekomendasi, bukti. |
-| `EvidenceQuote` | Kutipan, jenis dokumen, halaman, tautan ke pratinjau. |
-| `CategoryResultCard` | Hasil Screening 2: kategori, pertanyaan penentu, daftar pertanyaan. |
-| `DecisionPanel` | Pilihan Diterima / Ditolak + catatan (ROCAN). |
-| `AiCandidateTag` | Label "Hasil AI (kandidat)" agar berbeda dari keputusan ROCAN. |
-| `DataTable` | Tabel dengan header, urutan, filter, halaman. Dapat dibaca pembaca layar. |
+| `StatusBadge` | Status pengajuan dengan teks + ikon + warna, label menurut peran. |
+| `VerdictBadge` | Status hasil per item (tiga status resmi). |
+| `DocumentPair` | TOR dan RAB: nama, ukuran, pratinjau, unduh lewat endpoint unduh. |
+| `PdfPreviewModal` | Pratinjau PDF, bisa dibuka di halaman bukti; halaman di luar batas dibatasi ke halaman terakhir. |
+| `UploadDropzone` | Unggah satu berkas; bawaannya validasi PDF sesuai PRD §7.3. |
+| `ProgramContextPanel` | Snapshot hierarki: tahun, unit, program, kegiatan, KRO, RO, prioritas, kategori klaim, deskripsi. |
+| `ProgressPanel` | Delapan tahap pipeline tanpa persentase. |
+| `ResultSections` | Hasil per bagian, induk dan sub-item. |
+| `ResultItemView` | Satu item: status, penjelasan, alasan galat, perhitungan, bukti. |
+| `EvidenceQuote` | Kutipan, sumber, halaman, tautan ke pratinjau. |
+| `Screening2View` | Klaim, rekomendasi, kesesuaian, bukti. |
+| `AiCandidateTag` | Label "Hasil AI (kandidat)". |
+| `DataTable` | Tabel semantik dengan urutan dan halaman. |
 | `EmptyState`, `LoadingState`, `ErrorState` | Tiga keadaan, bahasa tenang dan jelas. |
-| `ConfirmDialog` | Konfirmasi hapus/ubah yang berisiko. |
+| `ConfirmDialog` | Konfirmasi tindakan berisiko (finalisasi, aktivasi, nonaktifkan akun). |
 | `DemoOnly` | Pembungkus penanda demo (lihat 8). |
 
-### 5.3 Detail Reviu (ROCAN dan Super Admin)
+### 5.3 Detail Reviu (ROCAN)
 
 Urutan dari atas ke bawah:
 
-1. Header: RO, satker, tanggal, status.
-2. Pasangan dokumen TOR dan RAB.
-3. Konteks program.
-4. Screening 1: pohon checklist, bukti per butir.
-5. Screening 2: kategori hasil dan rincian.
-6. Keputusan ROCAN: Diterima / Ditolak + catatan.
-7. Bagian belakang teknis (tersembunyi di balik tombol, lihat 7).
+1. Header: judul usulan, Satker, unit, tanggal, versi, status.
+2. Berkas TOR dan RAB.
+3. Hierarki anggaran.
+4. Progres (saat menunggu, berjalan, atau gagal). Bila gagal: penjelasan bahwa ini bukan
+   kesimpulan reviu, dan tombol "Jalankan ulang review".
+5. Screening 1: Hasil_Final per item. Item yang berbeda dari Hasil_AI ditandai "Diubah ROCAN"
+   beserta status AI semula. Tombol "Ubah hasil" per item: status, penjelasan, dan alasan
+   (wajib bila status berubah). Simpan memakai `expected_revision`; bentrok revisi (409) meminta
+   muat ulang.
+6. Screening 2: klaim, rekomendasi, kesesuaian, bukti.
+7. Keputusan ROCAN: Setujui / Minta revisi, kategori final (wajib), catatan (wajib saat minta
+   revisi), dengan konfirmasi. Hanya dari `siap_diverifikasi`.
+8. Riwayat perubahan: siapa, kapan, nilai lama/baru, alasan.
+9. Bagian belakang teknis (tersembunyi di balik tombol, lihat 7).
 
 Hasil AI dan keputusan ROCAN selalu tampil **terpisah** dan berlabel jelas.
 
@@ -209,59 +230,42 @@ Hasil AI dan keputusan ROCAN selalu tampil **terpisah** dan berlabel jelas.
 
 ## 6. Lapisan Data (API)
 
-Alur data nyata: unggah PDF, diproses backend, hasil diambil frontend. Maka frontend memakai
-**lapisan API**, bukan impor JSON sebagai jalur utama.
-
-- Semua akses data lewat satu modul klien API dengan antarmuka tetap.
-- Sediakan **adapter mock** (data JSON contoh yang mengikuti bentuk hasil Screening 1 dan 2)
-  agar frontend dapat dibangun sebelum backend siap. Adapter diganti lewat konfigurasi.
-- Anggap semua respons **tidak tepercaya**: validasi bentuk, tolak bidang tak dikenal dengan
-  pesan jelas, jangan sampai aplikasi crash.
-- Status proses (Diproses AI) diperbarui lewat polling berkala atau mekanisme dorong dari API.
-  Metode final menunggu kesepakatan backend.
-- Aturan data: kode tetap string (nol di depan tidak hilang), uang dalam rupiah diformat di
-  satu tempat, tanggal disimpan ISO dan ditampilkan dengan satu utilitas, `null` berarti
-  tidak diketahui (tampilkan "—", jangan mengarang).
-- Jangan menaruh rahasia di variabel `VITE_*` karena terkirim ke browser.
-- Backend: FastAPI. Adapter dipilih lewat `VITE_API_MODE` (`mock` atau `real`), alamat lewat
-  `VITE_API_URL`.
-- Skema respons ditulis dengan zod, tipe diturunkan dari skema. Pembuatan tipe otomatis dari
-  OpenAPI FastAPI dipertimbangkan setelah kontrak stabil.
-- Sementara backend belum ada, daftar dan masuk memakai adapter mock yang menyimpan akun,
-  sesi, dan pengajuan di `localStorage`. Sesi tetap diakses lewat klien API agar mudah diganti
-  ke autentikasi backend. Semua ini termasuk komponen demo (bagian 8).
-- Pembaruan status memakai TanStack Query (polling berkala) sampai backend menentukan metode.
-- Pratinjau PDF memakai react-pdf, dibungkus `PdfPreviewModal`, agar bisa lompat ke halaman
-  bukti dan mudah diganti.
+- Semua akses data lewat satu klien API dengan antarmuka tetap (`src/api/client.ts`) yang
+  mengikuti kontrak §3 endpoint demi endpoint.
+- Adapter `real`: prefix `/api/v1`, `Authorization: Bearer`, refresh token sekali saat 401, pesan
+  `{"detail": ...}` dari server dipakai apa adanya. Adapter `mock`: meniru aturan kontrak
+  (peran, kepemilikan 404, filter unit, validasi berkas, batas resubmisi, bentrok revisi) dengan
+  data di `localStorage`. Dipilih lewat `VITE_API_MODE`, alamat lewat `VITE_API_URL` (tanpa
+  `/api/v1`).
+- Skema respons ditulis dengan zod memakai **nama bidang kontrak (snake_case)**; tipe diturunkan
+  dari skema. Respons dianggap tidak tepercaya: bidang tak dikenal ditolak dengan pesan jelas.
+- Aturan data: kode anggaran selalu string (nol di depan tidak hilang), waktu RFC 3339, rupiah
+  diformat di satu tempat, `null` tampil "—".
+- Path storage tidak pernah diterima dari server; berkas diambil lewat
+  `GET /review-requests/{id}/documents/{tor|rab}`.
+- Jangan menaruh rahasia di variabel `VITE_*`.
 
 ### Daftar rute
 
 | Peran | Rute |
 |---|---|
-| Umum | `/masuk`, 403, 404 |
+| Umum | `/masuk`, `/notifikasi`, 403, 404 |
 | Satker | `/satker`, `/satker/ajukan`, `/satker/pengajuan`, `/satker/pengajuan/:id` |
-| ROCAN | `/rocan`, `/rocan/pengajuan`, `/rocan/pengajuan/:id`, `/rocan/acuan` |
-| Super Admin | semua rute ROCAN, ditambah `/admin/ro`, `/admin/checklist`, `/admin/kategori`, `/admin/pengguna` |
-
-Kontrak data yang dibutuhkan (bentuk final menunggu backend, lihat `BACKEND-APPENDIX.md`):
-pengajuan, dokumen, konteks program, hasil Screening 1, hasil Screening 2, keputusan ROCAN,
-checklist, kategori, Master RO, dokumen acuan, pengguna.
+| ROCAN | `/rocan`, `/rocan/pengajuan`, `/rocan/pengajuan/:id`, `/rocan/checklist`, `/rocan/acuan`, `/rocan/tabel-acuan`, `/rocan/master-ro`, `/rocan/kurasi` |
+| Super Admin | `/admin/pengguna` |
 
 ---
 
 ## 7. Bagian Belakang Aplikasi (Detail Teknis)
 
-Semua UI utama memakai bahasa sederhana. Hal teknis dipindah ke area terpisah yang hanya bisa
-dibuka ROCAN dan Super Admin (Satker tidak melihatnya):
+Hanya untuk ROCAN, tersembunyi di balik tombol:
 
-- JSON mentah hasil Screening 1 dan 2,
-- ID bukti, skor kemiripan, potongan (chunk) yang dipakai,
-- status teknis dan pesan galat,
-- versi checklist dan model yang dipakai,
-- unduh JSON.
+- run, jalur ekstraksi (`team1`/`docling_fallback`), versi checklist,
+- provenance: versi skema ekstraksi, versi aturan Lapis A, tabel acuan yang dipakai, model LLM,
+  model embedding, versi prompt,
+- JSON mentah hasil dan progres, unduh JSON.
 
-Aturan: area ini tidak boleh dibutuhkan untuk memahami hasil. Semua kesimpulan penting sudah
-terbaca di UI utama.
+Aturan: area ini tidak boleh dibutuhkan untuk memahami hasil.
 
 ---
 
@@ -278,52 +282,52 @@ Semua komponen yang hanya untuk demo **wajib** ditandai dengan cara yang sama da
 - Satu flag lingkungan (`VITE_SHOW_DEMO`) menyalakan atau mematikan semua komponen demo.
 
 Daftar demo saat ini:
-1. 3 tombol peran di halaman Masuk/Daftar.
-2. Adapter data mock dan penanda sumber data (bila ditampilkan di UI).
-3. Data contoh bawaan.
+1. 3 tombol peran di halaman Masuk.
+2. Adapter data mock dan penanda sumber data.
+3. Data contoh bawaan (`src/api/mockData.ts`): kode, unit, dan isi dokumen karangan, bukan data klien.
 
 ---
 
 ## 9. Sistem Desain
 
 Tema utama: **biru muda (baby blue)**. Selain itu bebas, selama konsisten. Tidak mengikuti
-desain ROCAN lama.
+desain ROCAN lama. Token ada di `src/styles/index.css`.
 
 ### 9.1 Prinsip
 1. Sederhana: satu tugas per layar, bahasa sehari-hari.
-2. Tenang dan ramah: ruang kosong cukup, sudut membulat, bayangan lembut.
+2. Tenang dan ramah: ruang kosong cukup. Kartu dan panel putih polos, tanpa garis tepi dan tanpa bayangan.
 3. Jujur: hasil AI selalu berlabel kandidat, data kosong ditampilkan apa adanya.
 4. Terbaca: status tidak hanya warna, kontras cukup, fokus keyboard terlihat.
 5. Responsif: nyaman di laptop dan tablet. Ponsel didukung untuk Satker.
 
-### 9.2 Warna (usulan, boleh disetel)
+### 9.2 Warna
 
 | Peran warna | Nilai | Pakai untuk |
 |---|---|---|
 | Biru muda dasar | `#DBEAF6` | Sorotan, garis di navigasi |
-| Biru muda pucat | `#EEF5FB` | Navigasi samping, panel keputusan ROCAN (latar halaman putih) |
+| Biru muda pucat | `#EEF5FB` | Navigasi samping (latar halaman putih) |
 | Biru utama | `#2B74AD` | Tombol utama, tautan, fokus |
 | Biru tua | `#1B4F78` | Nama aplikasi, menu aktif (judul memakai warna teks) |
 | Teks | `#18222D` | Teks isi dan judul |
 | Teks sekunder | `#5C6875` | Keterangan |
 | Garis | `#E3E8EE` (tegas `#CBD5DF`) | Pemisah antarbagian, batas input |
-| Sukses | `#1F7A52` | Diterima, Sesuai |
-| Peringatan | `#9A6700` | Menunggu, Bukti kurang |
-| Galat | `#C23B3B` | Ditolak, Belum sesuai |
-| Info | `#2B74AD` | Diproses |
+| Sukses | `#1F7A52` | Disetujui, Sesuai |
+| Peringatan | `#9A6700` | Siap diverifikasi, Terjadi Kesalahan pada proses |
+| Galat | `#C23B3B` | Perlu revisi, Tidak Sesuai, Pemrosesan gagal |
+| Info | `#2B74AD` | Menunggu reviu, Diproses AI |
 | **Penanda demo** | `#FF0000` | **Khusus komponen demo, jangan dipakai lain** |
 
-Periksa kontras teks minimal 4.5:1. Galat `#C23B3B` sengaja berbeda dari merah demo. Bagian halaman dipisah garis, bukan kotak putih.
+Periksa kontras teks minimal 4.5:1. Galat `#C23B3B` sengaja berbeda dari merah demo. Bagian
+halaman dipisah garis tipis antarbagian, bukan kotak; tidak ada kartu bergaris tepi, berlatar biru, atau berbayangan.
 
 ### 9.3 Tipografi
-- Font sans-serif bersih dan ramah, mis. Inter atau Plus Jakarta Sans.
+- Font Inter, dilayani sendiri.
 - Skala: 12 / 14 / 16 (isi) / 20 / 24 / 32. Judul tebal, isi reguler.
 - Angka tabel memakai angka tabular.
 
 ### 9.4 Tata letak dan bentuk
-- Grid 8px. Sudut membulat 12px (kartu), 8px (input, tombol).
+- Grid 8px. Sudut membulat 12px (kartu), 6px (input, tombol).
 - Kerangka: navigasi samping tetap di layar lebar, menu ringkas di layar kecil.
-- Lebar isi maks. 1280px. Kartu untuk ringkasan, tabel untuk daftar.
 
 ### 9.5 Pola interaksi
 - Satu tombol utama per layar. Tombol berisiko meminta konfirmasi.
@@ -340,22 +344,31 @@ Periksa kontras teks minimal 4.5:1. Galat `#C23B3B` sengaja berbeda dari merah d
 
 ## 10. Keputusan dan Hal yang Belum Pasti
 
-Sudah dikonfirmasi:
-1. Pendaftaran: Satker mendaftar sendiri. Akun ROCAN dan Super Admin dibuat oleh Super Admin.
-2. Pengajuan ditolak: Satker dapat mengajukan ulang sebagai pengajuan baru yang tertaut.
-3. Pemrosesan gagal tampil sebagai "Pemrosesan bermasalah", dengan opsi kirim ulang untuk
-   ROCAN dan Super Admin.
-4. Satker hanya melihat keputusan dan catatan ROCAN, bukan kutipan bukti AI.
-5. Hanya ROCAN yang menetapkan Diterima dan Ditolak.
-6. Mekanisme pembaruan status mengikuti kesepakatan backend (polling atau dorong).
+Sudah diputuskan (6 November 2026, menyelaraskan dengan PRD v2.1 dan kontrak v2.1):
+1. Tidak ada pendaftaran mandiri; akun dibuat Super Admin; masuk dengan NIP.
+2. Keputusan akhir ROCAN: `selesai_disetujui` (Disetujui) atau `selesai_revisi` (Perlu revisi).
+   Tidak ada "Ditolak". Revisi dikirim sebagai versi baru yang tertaut (maks. 3 kali); RO lain =
+   pengajuan baru.
+3. Review gagal: ROCAN menjalankan ulang (`retry-review`). Satker tetap melihat "Sedang direviu".
+4. Satker hanya melihat Hasil_Final setelah finalisasi, tidak pernah Hasil_AI.
+5. Super Admin hanya mengelola akun; checklist, Master RO, dokumen dan tabel acuan, serta kurasi
+   dikelola ROCAN.
+6. Pembaruan progres memakai polling (PRD K-18), 5 detik.
+7. Kategori K1–K4; Kategori 0 dan C01–C12 tidak dipakai (PRD K-20).
+8. Pengelolaan "kategori dokumen" dan "Master RO per baris" yang ada di rancangan lama dihapus;
+   jenis dokumen acuan mengikuti enum `doc_type` kontrak, dan Master RO dikelola per dataset.
 
-Masih terbuka:
-- Pemetaan 5W+1H dan pemecahan checklist bisa berubah (kemungkinan dibatalkan).
-- Bentuk final kontrak API.
+Masih terbuka (lihat juga PRD §17):
+- Bentuk `ReferenceTableVersion` dan baris tabel acuan (kontrak §3.9 belum merinci).
+- Endpoint ganti kata sandi sendiri (belum ada di kontrak).
+- Pemetaan 5W+1H dan pemecahan checklist bisa berubah; tetap disimpan sebagai data checklist.
 
 ---
 
 ## 11. Di Luar Lingkup Frontend
 
-Ekstraksi PDF, chunking, retrieval, embedding, model LLM, dan verifier adalah urusan backend.
+Seluruh backend berada di luar lingkup proyek ini: API FastAPI, autentikasi di server, basis
+data, antrean tugas, ekstraksi PDF, chunking, retrieval, embedding, model LLM, dan verifier.
 Ringkasan ada di `BACKEND-APPENDIX.md` agar tim frontend paham konteks, bukan untuk dibangun.
+Pekerjaan backend yang pernah dimulai di `tor-rab-ai-reviewer` sudah dibatalkan (6 November
+2026).

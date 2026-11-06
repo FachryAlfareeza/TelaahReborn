@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { ApiClient, ChangePasswordInput, LoginInput, RegisterInput } from "../../api";
+import type { ApiClient, LoginInput } from "../../api/client";
 import type { User } from "../../types";
 
 export type AuthValue = {
@@ -8,9 +8,7 @@ export type AuthValue = {
   user: User | null;
   loading: boolean;
   login: (input: LoginInput) => Promise<void>;
-  register: (input: RegisterInput) => Promise<void>;
   logout: () => Promise<void>;
-  changePassword: (input: ChangePasswordInput) => Promise<void>;
 };
 
 export const AuthContext = createContext<AuthValue | null>(null);

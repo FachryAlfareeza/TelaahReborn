@@ -63,7 +63,7 @@ export function ConfirmDialog({
         aria-modal="true"
         aria-labelledby={titleId}
         onKeyDown={onKeyDown}
-        className="w-full max-w-md rounded-card bg-white p-6 shadow-lg"
+        className="w-full max-w-md rounded-card bg-white p-6"
       >
         <h2 id={titleId} className="section-title">
           {title}

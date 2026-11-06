@@ -1,241 +1,233 @@
 import { useId, useState, type FormEvent } from "react";
-import { ActiveLabel } from "../../components/ActiveLabel";
-import { ConfirmDialog } from "../../components/ConfirmDialog";
+import {
+  useReferenceDocuments,
+  useReingestReferenceDocument,
+  useSetReferenceDocumentActive,
+  useUploadReferenceDocument,
+} from "../../api/queries";
 import { DataTable, type Column } from "../../components/DataTable";
 import { ErrorState } from "../../components/ErrorState";
+import { errorText, Feedback, Field } from "../../components/form";
 import { LoadingState } from "../../components/LoadingState";
+import { Section } from "../../components/Section";
 import { UploadDropzone } from "../../components/UploadDropzone";
 import { formatDate } from "../../lib/date";
-import type { ReferenceDocument } from "../../types";
-import {
-  useAddReferenceDocument,
-  useDeleteReferenceDocument,
-  useDocumentCategories,
-  useReferenceDocuments,
-  useSetReferenceDocumentActive,
-} from "../satker/hooks";
+import { displayValue } from "../../lib/empty";
+import type { ReferenceDocType, ReferenceDocument, ReferenceDocumentStatus, Validity } from "../../types";
 
+export const docTypeLabel: Record<ReferenceDocType, string> = {
+  rpjmn: "RPJMN",
+  renstra: "Renstra",
+  rkp: "RKP",
+  sbm: "SBM",
+  bas: "BAS",
+  kepmen: "Kepmen",
+  pmk: "PMK",
+  perpres: "Perpres",
+  pkpn: "PKPN",
+  pn_sbpi: "PN/SBPI",
+  lainnya: "Lainnya",
+};
+const validityLabel: Record<Validity, string> = { berlaku: "Berlaku", draf: "Draf", historis: "Historis" };
+const statusLabel: Record<ReferenceDocumentStatus, string> = {
+  pending: "Menunggu diproses",
+  processing: "Sedang diproses",
+  active: "Aktif",
+  failed: "Gagal diproses",
+  inactive: "Nonaktif",
+};
 
+/** Berkas dokumen acuan: PDF atau XLSX (kontrak §3.8). */
+async function validateReference(file: File): Promise<string | null> {
+  const name = file.name.toLowerCase();
+  if (!name.endsWith(".pdf") && !name.endsWith(".xlsx")) return "Berkas harus .pdf atau .xlsx.";
+  if (file.size === 0) return "Berkas kosong. Pilih berkas lain.";
+  return null;
+}
 
-
-export function ReferenceDocumentsPage() {
-  const categories = useDocumentCategories();
-  const docs = useReferenceDocuments();
-  const add = useAddReferenceDocument();
-  const toggle = useSetReferenceDocumentActive();
-  const remove = useDeleteReferenceDocument();
-
-  const [categoryCode, setCategoryCode] = useState("");
-  const [title, setTitle] = useState("");
+function UploadForm() {
+  const upload = useUploadReferenceDocument();
+  const ids = { title: useId(), type: useId(), validity: useId(), number: useId(), year: useId() };
   const [file, setFile] = useState<File | null>(null);
-  const [formError, setFormError] = useState<string | null>(null);
+  const [title, setTitle] = useState("");
+  const [type, setType] = useState<ReferenceDocType | "">("");
+  const [validity, setValidity] = useState<Validity>("berlaku");
+  const [number, setNumber] = useState("");
+  const [year, setYear] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
-  const [viewId, setViewId] = useState<string | null>(null);
-  const [toDelete, setToDelete] = useState<ReferenceDocument | null>(null);
-  const ids = { category: useId(), title: useId(), error: useId() };
-
-  const categoryName = (code: string) => categories.data?.find((c) => c.code === code)?.name ?? code;
-  const viewed = docs.data?.find((d) => d.id === viewId) ?? null;
+  const [error, setError] = useState<string | null>(null);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setNotice(null);
-    if (!categoryCode) return setFormError("Pilih kategori dokumen terlebih dahulu.");
-    if (!title.trim()) return setFormError("Isi judul dokumen terlebih dahulu.");
-    if (!file) return setFormError("Pilih berkas PDF terlebih dahulu.");
-    setFormError(null);
+    if (!file || !title.trim() || !type) return setError("Lengkapi berkas, judul, dan jenis dokumen.");
+    setError(null);
     try {
-      await add.mutateAsync({ categoryCode, title, file });
-      setTitle("");
+      await upload.mutateAsync({
+        file,
+        title: title.trim(),
+        doc_type: type,
+        validity,
+        number: number.trim() || undefined,
+        effective_year: year ? Number(year) : undefined,
+      });
+      setNotice(`"${title.trim()}" diunggah. Ingestion berjalan di latar belakang.`);
       setFile(null);
-      setNotice("Dokumen acuan sudah ditambahkan.");
+      setTitle("");
+      setNumber("");
+      setYear("");
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Dokumen belum bisa ditambahkan. Coba lagi.");
+      setError(errorText(err));
     }
   }
 
-  async function onToggle(d: ReferenceDocument) {
-    setNotice(null);
-    try {
-      await toggle.mutateAsync({ id: d.id, active: !d.active });
-      setNotice(`"${d.title}" sekarang ${d.active ? "nonaktif" : "aktif"}.`);
-    } catch {
-      /* galat ditampilkan lewat toggle.error */
-    }
-  }
+  return (
+    <form onSubmit={onSubmit} noValidate className="max-w-2xl space-y-4">
+      <UploadDropzone
+        label="Berkas dokumen acuan"
+        file={file}
+        onChange={setFile}
+        validate={validateReference}
+        accept=".pdf,.xlsx,application/pdf"
+        hint="PDF atau XLSX. Bisa diseret ke sini."
+        disabled={upload.isPending}
+      />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field id={ids.title} label="Judul">
+          <input id={ids.title} value={title} onChange={(e) => setTitle(e.target.value)} className="field" />
+        </Field>
+        <Field id={ids.type} label="Jenis dokumen">
+          <select id={ids.type} value={type} onChange={(e) => setType(e.target.value as ReferenceDocType)} className="field">
+            <option value="">Pilih jenis</option>
+            {Object.entries(docTypeLabel).map(([k, v]) => (
+              <option key={k} value={k}>
+                {v}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field id={ids.validity} label="Status berlaku">
+          <select id={ids.validity} value={validity} onChange={(e) => setValidity(e.target.value as Validity)} className="field">
+            {Object.entries(validityLabel).map(([k, v]) => (
+              <option key={k} value={k}>
+                {v}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field id={ids.number} label="Nomor (opsional)">
+          <input id={ids.number} value={number} onChange={(e) => setNumber(e.target.value)} className="field" />
+        </Field>
+        <Field id={ids.year} label="Tahun berlaku (opsional)">
+          <input id={ids.year} type="number" inputMode="numeric" value={year} onChange={(e) => setYear(e.target.value)} className="field" />
+        </Field>
+      </div>
+      <Feedback notice={notice} error={error} />
+      <button type="submit" disabled={upload.isPending} className="btn btn-primary">
+        {upload.isPending ? "Mengunggah..." : "Unggah"}
+      </button>
+    </form>
+  );
+}
 
-  async function onConfirmDelete() {
-    const target = toDelete;
-    setToDelete(null);
-    if (!target) return;
-    setNotice(null);
-    try {
-      await remove.mutateAsync(target.id);
-      if (viewId === target.id) setViewId(null);
-      setNotice(`"${target.title}" sudah dihapus.`);
-    } catch {
-      /* galat ditampilkan lewat remove.error */
-    }
-  }
+/** Dokumen acuan untuk RAG (PRD §7.7): unggah, pantau ingestion, nonaktifkan, aktifkan, ingest ulang. */
+export function ReferenceDocumentsPage() {
+  const [statusFilter, setStatusFilter] = useState<ReferenceDocumentStatus | "">("");
+  const filterId = useId();
+  const docs = useReferenceDocuments(statusFilter ? { status: statusFilter } : {});
+  const setActive = useSetReferenceDocumentActive();
+  const reingest = useReingestReferenceDocument();
+  const actionError = setActive.error ?? reingest.error;
 
   const columns: Column<ReferenceDocument>[] = [
-    { key: "title", header: "Judul", render: (d) => d.title, sortValue: (d) => d.title },
-    { key: "file", header: "Berkas", render: (d) => d.fileName },
-    { key: "date", header: "Ditambahkan", render: (d) => formatDate(d.addedAt), sortValue: (d) => d.addedAt },
-    { key: "status", header: "Status", render: (d) => <ActiveLabel active={d.active} /> },
+    {
+      key: "title",
+      header: "Judul",
+      render: (d) => (
+        <span>
+          {d.title}
+          <span className="block text-xs font-normal text-ink-soft">{d.filename}</span>
+        </span>
+      ),
+      sortValue: (d) => d.title,
+    },
+    { key: "type", header: "Jenis", render: (d) => docTypeLabel[d.doc_type], sortValue: (d) => d.doc_type },
+    { key: "number", header: "Nomor", render: (d) => displayValue(d.number) },
+    { key: "year", header: "Tahun", render: (d) => displayValue(d.effective_year), numeric: true },
+    { key: "validity", header: "Berlaku", render: (d) => validityLabel[d.validity] },
+    {
+      key: "status",
+      header: "Status",
+      render: (d) => (
+        <span>
+          {statusLabel[d.status]}
+          {d.error_message && <span className="block text-xs text-bad-text">{d.error_message}</span>}
+        </span>
+      ),
+      sortValue: (d) => d.status,
+    },
+    { key: "chunks", header: "Potongan", render: (d) => d.chunks_count, numeric: true },
+    { key: "date", header: "Diunggah", render: (d) => formatDate(d.uploaded_at), sortValue: (d) => d.uploaded_at },
     {
       key: "actions",
       header: "Tindakan",
       render: (d) => (
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            aria-expanded={viewId === d.id}
-            aria-label={`${viewId === d.id ? "Tutup" : "Lihat"} rincian ${d.title}`}
-            onClick={() => setViewId(viewId === d.id ? null : d.id)}
-            className="btn btn-secondary btn-sm"
-          >
-            {viewId === d.id ? "Tutup rincian" : "Lihat"}
-          </button>
-          <button
-            type="button"
-            aria-label={`${d.active ? "Nonaktifkan" : "Aktifkan"} ${d.title}`}
-            disabled={toggle.isPending}
-            onClick={() => void onToggle(d)}
-            className={`btn btn-secondary btn-sm disabled:opacity-50`}
-          >
-            {d.active ? "Nonaktifkan" : "Aktifkan"}
-          </button>
-          <button
-            type="button"
-            aria-label={`Hapus ${d.title}`}
-            onClick={() => setToDelete(d)}
-            className="btn btn-secondary btn-sm"
-          >
-            Hapus
-          </button>
-        </div>
+        <span className="flex flex-wrap gap-2">
+          {d.status === "active" && (
+            <button type="button" className="link" onClick={() => setActive.mutate({ id: d.id, active: false })} aria-label={`Nonaktifkan ${d.title}`}>
+              Nonaktifkan
+            </button>
+          )}
+          {d.status === "inactive" && d.processed_at && (
+            <button type="button" className="link" onClick={() => setActive.mutate({ id: d.id, active: true })} aria-label={`Aktifkan ${d.title}`}>
+              Aktifkan
+            </button>
+          )}
+          {d.status !== "pending" && d.status !== "processing" && (
+            <button type="button" className="link" onClick={() => reingest.mutate(d.id)} aria-label={`Ingest ulang ${d.title}`}>
+              Ingest ulang
+            </button>
+          )}
+        </span>
       ),
     },
   ];
 
-  const actionError = toggle.error ?? remove.error;
-
   return (
     <div className="space-y-6">
       <h1 className="page-title">Dokumen Acuan</h1>
-
-      <form
-        aria-label="Tambah dokumen acuan"
-        onSubmit={(e) => void onSubmit(e)}
-        className="space-y-4 border-t border-line pt-6"
-      >
-        <h2 className="section-title">Tambah dokumen acuan</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor={ids.category} className="field-label">
-              Kategori
-            </label>
-            <select
-              id={ids.category}
-              value={categoryCode}
-              onChange={(e) => setCategoryCode(e.target.value)}
-              className="field"
-            >
-              <option value="">Pilih kategori</option>
-              {(categories.data ?? []).map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label htmlFor={ids.title} className="field-label">
-              Judul dokumen
-            </label>
-            <input
-              id={ids.title}
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="field"
-            />
-          </div>
+      <p className="max-w-2xl text-sm text-ink-soft">
+        Dokumen aktif dipakai sebagai rujukan reviu. Dokumen nonaktif tidak lagi diambil saat reviu.
+      </p>
+      <Section title="Unggah dokumen">
+        <UploadForm />
+      </Section>
+      <Section title="Daftar dokumen">
+        <div className="mb-3">
+          <label htmlFor={filterId} className="field-label">
+            Status
+          </label>
+          <select
+            id={filterId}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as ReferenceDocumentStatus | "")}
+            className="field w-auto"
+          >
+            <option value="">Semua status</option>
+            {Object.entries(statusLabel).map(([k, v]) => (
+              <option key={k} value={k}>
+                {v}
+              </option>
+            ))}
+          </select>
         </div>
-        <UploadDropzone label="Berkas PDF" file={file} onChange={setFile} disabled={add.isPending} />
-        {formError && (
-          <p id={ids.error} role="alert" className="error-text">
-            {formError}
-          </p>
+        {actionError && <ErrorState message={actionError.message} />}
+        {docs.isPending && <LoadingState />}
+        {docs.error && <ErrorState message={docs.error.message} onRetry={() => void docs.refetch()} />}
+        {docs.data && (
+          <DataTable caption="Dokumen acuan" columns={columns} rows={docs.data} getRowKey={(d) => d.id} emptyTitle="Belum ada dokumen acuan." />
         )}
-        <button
-          type="submit"
-          disabled={add.isPending}
-          className="btn btn-primary"
-        >
-          {add.isPending ? "Menambahkan..." : "Tambah dokumen"}
-        </button>
-      </form>
-
-      <div role="status" aria-live="polite">
-        {notice && <p className="text-sm text-ok">{notice}</p>}
-      </div>
-      {actionError && <ErrorState message={actionError.message} />}
-
-      {viewed && (
-        <section aria-label="Rincian dokumen acuan" className="rounded-card bg-sky-pale p-5">
-          <h2 className="section-title">{viewed.title}</h2>
-          <dl className="mt-2 grid gap-1 text-sm sm:grid-cols-[auto_1fr] sm:gap-x-4">
-            <dt className="text-ink-soft">Kategori</dt>
-            <dd>{categoryName(viewed.categoryCode)}</dd>
-            <dt className="text-ink-soft">Berkas</dt>
-            <dd>{viewed.fileName}</dd>
-            <dt className="text-ink-soft">Ditambahkan</dt>
-            <dd>{formatDate(viewed.addedAt)}</dd>
-            <dt className="text-ink-soft">Status</dt>
-            <dd>
-              <ActiveLabel active={viewed.active} />
-            </dd>
-          </dl>
-          <button type="button" onClick={() => setViewId(null)} className={`btn btn-secondary btn-sm mt-3`}>
-            Tutup rincian
-          </button>
-        </section>
-      )}
-
-      {(docs.isPending || categories.isPending) && <LoadingState label="Memuat dokumen acuan..." />}
-      {docs.error && <ErrorState message={docs.error.message} onRetry={() => void docs.refetch()} />}
-      {categories.error && <ErrorState message={categories.error.message} onRetry={() => void categories.refetch()} />}
-      {docs.data &&
-        categories.data &&
-        categories.data.map((c) => (
-          <section key={c.code} aria-labelledby={`grup-${c.code}`} className="space-y-2">
-            <h2 id={`grup-${c.code}`} className="section-title">
-              {c.name}
-            </h2>
-            <DataTable
-              caption={`Dokumen acuan ${c.name}`}
-              columns={columns}
-              rows={docs.data.filter((d) => d.categoryCode === c.code)}
-              getRowKey={(d) => d.id}
-              emptyTitle={`Belum ada dokumen acuan ${c.name}`}
-            />
-          </section>
-        ))}
-
-      <ConfirmDialog
-        open={toDelete !== null}
-        title="Hapus dokumen acuan?"
-        confirmLabel="Ya, hapus"
-        onConfirm={() => void onConfirmDelete()}
-        onCancel={() => setToDelete(null)}
-      >
-        <p>
-          Dokumen "{toDelete?.title}" akan dihapus dan tidak dipakai lagi sebagai acuan. Tindakan ini tidak bisa
-          dibatalkan. Bila hanya ingin berhenti memakainya sementara, pilih Nonaktifkan.
-        </p>
-      </ConfirmDialog>
+      </Section>
     </div>
   );
 }

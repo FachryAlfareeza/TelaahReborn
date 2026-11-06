@@ -1,20 +1,26 @@
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { KeyRound, LogOut, Menu, X } from "lucide-react";
+import { Bell, LogOut, Menu, X } from "lucide-react";
+import { useUnreadCount } from "../api/queries";
 import { useAuth } from "../features/auth/authState";
-import { ChangePasswordDialog } from "../features/auth/ChangePasswordDialog";
 import { navForRole, roleLabel } from "../lib/roles";
 import { DataSourceIndicator } from "./DataSourceIndicator";
 
-const sideButton = "flex w-full items-center gap-2 rounded-control px-3 py-2 text-left text-sm text-ink-soft hover:bg-sky-soft hover:text-ink";
+const sideButton =
+  "flex w-full items-center gap-2 rounded-control px-3 py-2 text-left text-sm text-ink-soft hover:bg-sky-soft hover:text-ink";
+const navClass = ({ isActive }: { isActive: boolean }) =>
+  `flex items-center gap-2 rounded-control px-3 py-2 text-sm ${
+    isActive ? "bg-white font-medium text-brand-deep shadow-xs" : "text-ink hover:bg-sky-soft"
+  }`;
 
-/** Kerangka aplikasi: navigasi menurut peran, nama pengguna, ganti kata sandi, keluar. */
+/** Kerangka aplikasi: navigasi menurut peran, notifikasi, nama pengguna, keluar. */
 export function AppShell() {
   const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [passwordOpen, setPasswordOpen] = useState(false);
+  const unread = useUnreadCount();
   if (!user) return null;
   const items = navForRole(user.role);
+  const count = unread.data ?? 0;
 
   return (
     <div className="min-h-screen lg:flex">
@@ -41,28 +47,34 @@ export function AppShell() {
             <ul className="flex flex-col gap-0.5">
               {items.map((item) => (
                 <li key={item.to}>
-                  <NavLink
-                    to={item.to}
-                    end={item.end}
-                    onClick={() => setMenuOpen(false)}
-                    className={({ isActive }) =>
-                      `block rounded-control px-3 py-2 text-sm ${
-                        isActive ? "bg-white font-medium text-brand-deep shadow-xs" : "text-ink hover:bg-sky-soft"
-                      }`
-                    }
-                  >
+                  <NavLink to={item.to} end={item.end} onClick={() => setMenuOpen(false)} className={navClass}>
                     {item.label}
                   </NavLink>
                 </li>
               ))}
+              <li>
+                <NavLink
+                  to="/notifikasi"
+                  onClick={() => setMenuOpen(false)}
+                  className={navClass}
+                  aria-label={count > 0 ? `Notifikasi, ${count} belum dibaca` : "Notifikasi"}
+                >
+                  <Bell aria-hidden size={16} />
+                  Notifikasi
+                  {count > 0 && (
+                    <span className="ml-auto rounded-full bg-brand px-1.5 text-xs font-semibold text-white tabular-nums">
+                      {count}
+                    </span>
+                  )}
+                </NavLink>
+              </li>
             </ul>
           </nav>
 
           <div className="mt-6 border-t border-sky-soft pt-4 lg:mt-auto">
-            <p className="truncate px-3 pb-2 text-sm font-medium">{user.name}</p>
-            <button type="button" onClick={() => setPasswordOpen(true)} className={sideButton}>
-              <KeyRound aria-hidden size={16} /> Ganti kata sandi
-            </button>
+            <p className="truncate px-3 text-sm font-medium">{user.nama}</p>
+            <p className="truncate px-3 pb-2 text-xs text-ink-soft tabular-nums">NIP {user.nip}</p>
+            {user.unit_eselon2 && <p className="px-3 pb-2 text-xs text-ink-soft">{user.unit_eselon2.name}</p>}
             <button type="button" onClick={() => void logout()} className={sideButton}>
               <LogOut aria-hidden size={16} /> Keluar
             </button>
@@ -78,7 +90,6 @@ export function AppShell() {
           <DataSourceIndicator />
         </div>
       </div>
-      {passwordOpen && <ChangePasswordDialog onClose={() => setPasswordOpen(false)} />}
     </div>
   );
 }

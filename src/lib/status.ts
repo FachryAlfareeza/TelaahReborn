@@ -1,4 +1,4 @@
-import type { Role, SubmissionStatus } from "../types";
+import type { Role, ReviewRequestStatus } from "../types";
 
 export type StatusTone = "info" | "warning" | "success" | "error";
 
@@ -6,38 +6,67 @@ export type StatusView = {
   label: string;
   tone: StatusTone;
   /** Nama ikon lucide-react. Status tidak boleh hanya warna. */
-  icon: "Loader" | "ClipboardCheck" | "CircleCheck" | "CircleX" | "TriangleAlert";
+  icon: "Clock" | "Loader" | "ClipboardCheck" | "CircleCheck" | "RotateCcw" | "TriangleAlert";
 };
 
-/** Satu-satunya pemetaan status per peran. Dipakai semua komponen. */
-export function getStatusView(status: SubmissionStatus, role: Role): StatusView {
-  const isSatker = role === "SATKER";
+/** Urutan status pengajuan (kontrak §2), dipakai filter dan ringkasan. */
+export const REQUEST_STATUSES: ReviewRequestStatus[] = [
+  "menunggu_review",
+  "dalam_proses",
+  "siap_diverifikasi",
+  "gagal",
+  "selesai_revisi",
+  "selesai_disetujui",
+];
+
+/**
+ * Satu-satunya pemetaan status pengajuan ke label per peran. Dipakai semua komponen.
+ *
+ * Bagi Satker, `siap_diverifikasi` berarti "sedang diperiksa ROCAN" (hasil AI belum boleh dilihat,
+ * PRD FR-VER-03), dan `gagal` tidak ditampilkan sebagai kegagalan: Satker tidak dilibatkan saat
+ * review gagal (kontrak §4.3), dan kegagalan teknis tidak boleh tampil sebagai kesimpulan reviu.
+ */
+export function getStatusView(status: ReviewRequestStatus, role: Role): StatusView {
+  const isSatker = role === "satker";
   switch (status) {
-    case "PROCESSING":
-      return { label: isSatker ? "Terupload" : "Diproses AI", tone: "info", icon: "Loader" };
-    case "AWAITING_REVIEW":
-      return {
-        label: isSatker ? "Diperiksa" : "Menunggu Pemeriksaan",
-        tone: "warning",
-        icon: "ClipboardCheck",
-      };
-    case "ACCEPTED":
-      return { label: "Diterima", tone: "success", icon: "CircleCheck" };
-    case "REJECTED":
-      return { label: "Ditolak", tone: "error", icon: "CircleX" };
-    case "PROCESSING_FAILED":
-      // Kegagalan sistem bukan kesimpulan reviu. Satker tetap melihat "Terupload".
+    case "menunggu_review":
+      return { label: "Menunggu reviu", tone: "info", icon: "Clock" };
+    case "dalam_proses":
+      return { label: isSatker ? "Sedang direviu" : "Diproses AI", tone: "info", icon: "Loader" };
+    case "siap_diverifikasi":
       return isSatker
-        ? { label: "Terupload", tone: "info", icon: "Loader" }
-        : { label: "Pemrosesan bermasalah", tone: "error", icon: "TriangleAlert" };
+        ? { label: "Diperiksa ROCAN", tone: "warning", icon: "ClipboardCheck" }
+        : { label: "Siap diverifikasi", tone: "warning", icon: "ClipboardCheck" };
+    case "gagal":
+      return isSatker
+        ? { label: "Sedang direviu", tone: "info", icon: "Loader" }
+        : { label: "Pemrosesan gagal", tone: "error", icon: "TriangleAlert" };
+    case "selesai_revisi":
+      return { label: "Perlu revisi", tone: "error", icon: "RotateCcw" };
+    case "selesai_disetujui":
+      return { label: "Disetujui", tone: "success", icon: "CircleCheck" };
   }
 }
 
-export function getStatusLabel(status: SubmissionStatus, role: Role): string {
+export function getStatusLabel(status: ReviewRequestStatus, role: Role): string {
   return getStatusView(status, role).label;
 }
 
-/** Kirim ulang hanya untuk ROCAN dan Super Admin saat pemrosesan bermasalah. */
-export function canResubmitProcessing(status: SubmissionStatus, role: Role): boolean {
-  return status === "PROCESSING_FAILED" && role !== "SATKER";
+/** Status yang ditampilkan sebagai pilihan saring untuk peran ini (label unik). */
+export function statusOptions(role: Role): { label: string; statuses: ReviewRequestStatus[] }[] {
+  const groups = new Map<string, ReviewRequestStatus[]>();
+  for (const s of REQUEST_STATUSES) {
+    const label = getStatusLabel(s, role);
+    groups.set(label, [...(groups.get(label) ?? []), s]);
+  }
+  return [...groups].map(([label, statuses]) => ({ label, statuses }));
 }
+
+/** Jalankan ulang hanya untuk ROCAN, dari status gagal (PRD K-25). */
+export const canRetryReview = (status: ReviewRequestStatus, role: Role) => role === "rocan" && status === "gagal";
+
+/** Review masih berjalan: halaman detail memperbarui progres secara berkala. */
+export const isRunning = (status: ReviewRequestStatus) => status === "menunggu_review" || status === "dalam_proses";
+
+/** Status akhir dari ROCAN. */
+export const isFinal = (status: ReviewRequestStatus) => status === "selesai_revisi" || status === "selesai_disetujui";

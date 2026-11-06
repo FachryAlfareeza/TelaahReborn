@@ -1,5 +1,6 @@
 import { useId, useRef, useState, type DragEvent } from "react";
 import { FileText, Upload } from "lucide-react";
+import { MAX_FILE_MB, validatePdf } from "../lib/files";
 
 type Props = {
   label: string;
@@ -7,28 +8,32 @@ type Props = {
   onChange: (file: File | null) => void;
   maxSizeMb?: number;
   disabled?: boolean;
+  /** Pemeriksa berkas; bawaan: PDF sesuai PRD §7.3. Kembalikan pesan galat atau null. */
+  validate?: (file: File) => Promise<string | null>;
+  accept?: string;
+  hint?: string;
 };
 
-/** Mengembalikan pesan galat, atau null bila berkas boleh dipakai. */
-export function validatePdf(file: File, maxSizeMb: number): string | null {
-  const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-  if (!isPdf) return "Berkas harus berformat PDF.";
-  if (file.size > maxSizeMb * 1024 * 1024) return `Ukuran berkas melebihi ${maxSizeMb} MB.`;
-  if (file.size === 0) return "Berkas kosong. Pilih berkas lain.";
-  return null;
-}
-
-/** Unggah satu PDF lewat klik atau seret. Memeriksa tipe dan ukuran. */
-export function UploadDropzone({ label, file, onChange, maxSizeMb = 20, disabled = false }: Props) {
+/** Unggah satu berkas lewat klik atau seret. Bawaannya memeriksa PDF (ekstensi, MIME, signature, ukuran). */
+export function UploadDropzone({
+  label,
+  file,
+  onChange,
+  maxSizeMb = MAX_FILE_MB,
+  disabled = false,
+  validate = (f) => validatePdf(f, maxSizeMb),
+  accept = "application/pdf,.pdf",
+  hint = `PDF, maks. ${maxSizeMb} MB. Bisa diseret ke sini.`,
+}: Props) {
   const inputId = useId();
   const errorId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
 
-  function accept(next: File | undefined) {
+  async function accept_(next: File | undefined) {
     if (!next) return;
-    const problem = validatePdf(next, maxSizeMb);
+    const problem = await validate(next);
     setError(problem);
     onChange(problem ? null : next);
   }
@@ -36,7 +41,7 @@ export function UploadDropzone({ label, file, onChange, maxSizeMb = 20, disabled
   function onDrop(e: DragEvent<HTMLDivElement>) {
     e.preventDefault();
     setDragging(false);
-    if (!disabled) accept(e.dataTransfer.files[0]);
+    if (!disabled) void accept_(e.dataTransfer.files[0]);
   }
 
   return (
@@ -56,18 +61,19 @@ export function UploadDropzone({ label, file, onChange, maxSizeMb = 20, disabled
         }`}
       >
         <Upload aria-hidden="true" size={18} className="text-ink-soft" />
-        <p className="text-sm text-ink-soft">PDF, maks. {maxSizeMb} MB. Bisa diseret ke sini.</p>
+        <p className="text-sm text-ink-soft">{hint}</p>
         <input
           ref={inputRef}
           id={inputId}
           type="file"
-          accept="application/pdf,.pdf"
+          accept={accept}
           disabled={disabled}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
           onChange={(e) => {
-            accept(e.target.files?.[0]);
+            const picked = e.target.files?.[0];
             e.target.value = "";
+            void accept_(picked);
           }}
           className="text-sm"
         />

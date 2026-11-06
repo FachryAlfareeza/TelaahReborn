@@ -34,6 +34,7 @@ function PreviewDialog({ title, file, initialPage = 1, onClose }: Props) {
   const [page, setPage] = useState(Math.max(1, initialPage));
   const [draft, setDraft] = useState(String(Math.max(1, initialPage)));
   const [loadError, setLoadError] = useState(false);
+  const [outOfRange, setOutOfRange] = useState<number | null>(null);
 
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
@@ -78,7 +79,7 @@ function PreviewDialog({ title, file, initialPage = 1, onClose }: Props) {
         aria-modal="true"
         aria-labelledby={titleId}
         onKeyDown={onKeyDown}
-        className="flex max-h-full w-full max-w-3xl flex-col rounded-card bg-white p-4 shadow-lg"
+        className="flex max-h-full w-full max-w-3xl flex-col rounded-card bg-white p-4"
       >
         <div className="flex items-start justify-between gap-2">
           <h2 id={titleId} className="text-lg font-bold break-all text-brand-deep">
@@ -122,6 +123,11 @@ function PreviewDialog({ title, file, initialPage = 1, onClose }: Props) {
           <p className="text-sm text-ink-soft" aria-live="polite">
             Halaman {page} dari {pageCount ?? "—"}
           </p>
+          {outOfRange !== null && (
+            <p role="status" className="w-full text-sm text-warn">
+              Halaman {outOfRange} tidak ada pada berkas ini. Ditampilkan halaman terakhir.
+            </p>
+          )}
         </div>
 
         <div className="mt-3 min-h-40 overflow-auto rounded-control border border-line bg-sky-pale p-2">
@@ -137,11 +143,22 @@ function PreviewDialog({ title, file, initialPage = 1, onClose }: Props) {
               onLoadSuccess={({ numPages }) => {
                 setPageCount(numPages);
                 setLoadError(false);
-                if (page > numPages) goTo(numPages);
+                if (page > numPages) {
+                  setOutOfRange(page);
+                  goTo(numPages);
+                }
               }}
               onLoadError={() => setLoadError(true)}
             >
-              <Page pageNumber={page} width={640} renderTextLayer={false} renderAnnotationLayer={false} />
+              {/* Halaman baru diminta setelah jumlah halaman diketahui; nomor di luar batas memicu galat pdf.js. */}
+              {pageCount !== null && (
+                <Page
+                  pageNumber={Math.min(page, pageCount)}
+                  width={640}
+                  renderTextLayer={false}
+                  renderAnnotationLayer={false}
+                />
+              )}
             </Document>
           )}
         </div>
